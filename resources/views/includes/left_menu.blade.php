@@ -46,13 +46,13 @@
                     <div class="collapse" id="sidebarMultilevel_lm">
                         <ul class="nav-second-level">
                             <li>
-                                <a href="{{ route('lm_group.list') }}">Группы параметров</a>
+                                <a href="#">Группы параметров</a>
                             </li>
                             <li>
                                 <a href="{{ route('lm_tech.list') }}">Тех. характеристики</a>
                             </li>
                             <li>
-                                <a href="/error404">Комплектации</a>
+                                <a href="#">Комплектации</a>
                             </li>
                             <li>
                                 <a href="{{ route('lm_model.list') }}">Модели</a>

@@ -44,6 +44,32 @@
         .select2-container--default .select2-selection--single:hover {
             zborder-color: #28a745;
         }
+
+         #basic-datatable tbody tr {
+                height: 60px; /* фиксированная высота строки */
+            }
+            #basic-datatable tbody td {
+                vertical-align: middle !important;
+                line-height: 1.2;
+            }
+            #basic-datatable .btn-sm {
+                height: 32px;
+                width: 32px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0 !important;
+            }
+
+            
+
+            #basic-datatable td:nth-child(1) {
+                white-space: normal;      /* разрешаем перенос */
+                word-break: break-word;   /* переносим длинные слова */
+                word-wrap: break-word;    /* для старых браузеров */
+                overflow-wrap: break-word; /* современный аналог */
+                max-width: 200px;         /* максимальная ширина */
+            }
     </style>
 
     <!-- start page title -->
@@ -53,7 +79,7 @@
                 <h4 class="page-title">Справочник технических характеристик</h4>
                 <div class="page-title-right">
                     <div class="page-title-right">
-                        <a href="{{-- route('livemachines.sprav.create') --}}" class="btn btn-success btn-rounded">
+                        <a href="#{{-- route('livemachines.sprav.create') --}}" class="btn btn-success btn-rounded">
                             <i class="mdi mdi-plus me-1"></i> Создать
                         </a>
                     </div>
@@ -94,35 +120,6 @@
     </div>
 
     <div class="row">
-
-        <style>
-            #basic-datatable tbody tr {
-                height: 60px; /* фиксированная высота строки */
-            }
-            #basic-datatable tbody td {
-                vertical-align: middle !important;
-                line-height: 1.2;
-            }
-            #basic-datatable .btn-sm {
-                height: 32px;
-                width: 32px;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                padding: 0 !important;
-            }
-
-            
-
-            #basic-datatable td:nth-child(1) {
-                white-space: normal;      /* разрешаем перенос */
-    word-break: break-word;   /* переносим длинные слова */
-    word-wrap: break-word;    /* для старых браузеров */
-    overflow-wrap: break-word; /* современный аналог */
-    max-width: 200px;         /* максимальная ширина */
-            }
-        </style>
-        
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
@@ -130,7 +127,7 @@
                         <thead>
                             <tr>
                                 <th>Название</th>
-                                <th width="1%">Производителей</th>
+                                <th width="1%">Файлы</th>
                                 <th width="1%">Файлов</th>
                                 <th width="1%"></th>
                             </tr>
