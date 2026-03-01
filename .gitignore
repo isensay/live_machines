@@ -1,0 +1,98 @@
+# Laravel specific
+/vendor/
+node_modules/
+.env
+.env.backup
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+storage/*.key
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+storage/logs/
+bootstrap/cache/
+
+# IDE
+/.idea/
+/.vscode/
+*.sublime-*
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.netbeans
+
+# Папки, которые вы указали (добавлено ниже)
+/public/json_files_1/
+/public/json_files_2/
+/public/json_files_3/
+/public/pdf_info1/
+/public/pdf_info2/
+/public/pdf_info3/
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# Testing
+/phpunit.xml
+.phpunit.result.cache
+
+# Environment files
+.env
+.env.production
+.env.local
+.env.*.local
+
+# Laravel horizon
+/horizon
+
+# Laravel Telescope
+/telescope
+/storage/telescope/
+
+# Local configuration
+config/services.php
+config/broadcasting.php
+
+#*.log
+#.DS_Store
+#.env
+#.env.backup
+#.env.production
+#.phpactor.json
+#.phpunit.result.cache
+#/.fleet
+#/.idea
+#/.nova
+#/.phpunit.cache
+#/.vscode
+#/.zed
+#/auth.json
+#/node_modules
+#/public/build
+#/public/hot
+#/public/storage
+#/storage/*.key
+#/storage/pail
+#/vendor
+#Homestead.json
+#Homestead.yaml
+#Thumbs.db
+docker-compose.yml
