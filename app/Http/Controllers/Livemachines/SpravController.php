@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\livemachines;
+namespace App\Http\Controllers\Livemachines;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;

@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 
-class UnblockIp extends Command
+class UnblockIP extends Command
 {
     protected $signature = 'unblock:ip {ip}';
     protected $description = 'Unblock IP address from login attempts';

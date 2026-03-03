@@ -91,6 +91,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })->create();
 
+/*
 // Вспомогательные функции
 function getErrorTitle(int $status): string
 {
@@ -106,3 +107,4 @@ function getErrorImage(int $status): string
 {
     return "/source/base/images/errors/{$status}.svg";
 }
+*/
