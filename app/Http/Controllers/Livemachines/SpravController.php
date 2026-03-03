@@ -82,12 +82,14 @@ class SpravController extends Controller
         SELECT
             `dirty_param_name_id`    as `paramNameId`,
             `dirty_param_name_value` as `paramName`,
-            GROUP_CONCAT(DISTINCT `dirty_file_name` SEPARATOR '<br>') as `manufCount`,
-            COUNT(DISTINCT `dirty_file_id`) as `fileCount`
+            GROUP_CONCAT(DISTINCT IF(`dirty_group_name` IS NOT NULL, `dirty_group_name`, '-') SEPARATOR '<br><br>') as `groups`,
+            GROUP_CONCAT(DISTINCT `dirty_file_name`  SEPARATOR '<br>') as `files`
+
+            #COUNT(DISTINCT `dirty_file_id`) as `fileCount`
         FROM `dirty_param_name`
             LEFT JOIN `dirty_param` ON (`dirty_param_name_id` = `dirty_param_dirty_param_name_id` AND `dirty_param_dirty_type_id` = `dirty_param_name_dirty_type_id` AND `dirty_param_remove_user_id` = 0)
             LEFT JOIN `dirty_file` ON (`dirty_file_id` = `dirty_param_dirty_file_id`)
-            #LEFT JOIN `` ON (`` = ``)
+            LEFT JOIN `dirty_group` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_dirty_type_id` = `dirty_param_name_dirty_type_id`)
         WHERE 1
             AND `dirty_param_name_dirty_type_id` = 1
             #AND `dirty_param_name_value` NOT REGEXP '[а-яА-Яa-zA-Z]'
@@ -203,6 +205,264 @@ class SpravController extends Controller
                 ->with('error', 'Ошибка при удалении');
         }
     }
+
+
+    // ---------------------
+
+    /**
+     * Получить данные для редактирования
+     */
+    public function tech_edit_data($id)
+    {
+        try {
+            $dbLm = DB::connection('livemachines');
+            
+            // Получаем основную информацию о параметре
+            $sql = "
+                SELECT
+                    `dirty_param_name_id` as `id`,
+                    `dirty_param_name_value` as `name`,
+                    `dirty_param_name_dirty_type_id` as `type_id`
+                FROM `dirty_param_name`
+                WHERE `dirty_param_name_id` = ?
+                    AND `dirty_param_name_dirty_type_id` = 1
+            ";
+            
+            $param = $dbLm->selectOne($sql, [$id]);
+            
+            if (!$param) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Параметр не найден'
+                ], 404);
+            }
+            
+            // Получаем группы, к которым привязан параметр
+            $groupsSql = "
+                SELECT
+                    `dirty_group_id`   as `id`,
+                    `dirty_group_name` as `name`
+                FROM `dirty_param`
+                INNER JOIN `dirty_group` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_remove_date` = 0)
+                WHERE 1
+                    AND `dirty_param_dirty_param_name_id` = ?
+                    AND `dirty_param_dirty_type_id`       = 1
+                    AND `dirty_param_remove_date`         = 0
+                GROUP BY
+                    `dirty_group_id`
+                ORDER BY
+                    `name` ASC
+            ";
+            
+            $groups = $dbLm->select($groupsSql, [$id]);
+
+            // ЗАГЛУШКА
+            usleep(500000);
+            
+            // Получаем единицы измерения и значения
+            $valuesSql = "
+                SELECT
+                   `dirty_param_unit_id`      as `unit_id`,
+                    `dirty_param_unit_value`  as `unit_name`,
+                    `dirty_param_value_id`    as `value_id`,
+                    `dirty_param_value_value` as `value`,
+                    '' as `value_text`,
+                    0  as `file_id`
+                FROM `dirty_param`
+                    INNER JOIN `dirty_param_unit`  ON (`dirty_param_unit_id`  = `dirty_param_dirty_param_unit_id`  AND `dirty_param_unit_dirty_type_id`  = `dirty_param_dirty_type_id`)
+                    LEFT  JOIN `dirty_param_value` ON (`dirty_param_value_id` = `dirty_param_dirty_param_value_id` AND `dirty_param_value_dirty_type_id` = `dirty_param_dirty_type_id`)
+                WHERE 1
+                    AND `dirty_param_dirty_param_name_id` = ?
+                    AND `dirty_param_dirty_type_id`       = 1
+                    AND `dirty_param_remove_date`         = 0
+                GROUP BY
+                    `unit_id`
+            ";
+            
+            $values = $dbLm->select($valuesSql, [$id]);
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'param' => $param,
+                    'groups' => $groups,
+                    'values' => $values
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error getting edit data: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки данных: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Получить справочники для формы редактирования (РЫБА)
+     */
+    public function tech_get_references()
+    {
+        // ВРЕМЕННЫЕ СТАТИЧНЫЕ ДАННЫЕ - ЗАМЕНИТЕ ПОТОМ НА РЕАЛЬНЫЕ
+
+        try {
+            $dbLm = DB::connection('livemachines');
+
+            $groupsSql = "
+                SELECT
+                    `dirty_group_id`   as `id`,
+                    `dirty_group_name` as `name`
+                FROM `dirty_group`
+                WHERE 1
+                    AND `dirty_group_dirty_type_id` = 1
+                    AND `dirty_group_remove_date`   = 0
+                GROUP BY
+                    `id`
+                ORDER BY
+                    `name` ASC
+            ";
+            
+            $groups = $dbLm->select($groupsSql);
+
+            $unitsSql = "
+                SELECT
+                    `dirty_param_unit_id`    as `id`,
+                    `dirty_param_unit_value` as `name`,
+                    'text'                   as `type`
+                FROM `dirty_param_unit`
+                WHERE 1
+                    AND `dirty_param_unit_dirty_type_id` = 1
+                GROUP BY
+                    `id`
+                ORDER BY
+                    `name` ASC
+            ";
+            
+            $units = $dbLm->select($unitsSql);
+
+        } catch(\Exeption $e) {
+            Log::error('Error getting edit data: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки данных: ' . $e->getMessage()
+            ], 500);
+        }
+        
+        //$units = [
+        //    ['id' => 1, 'name' => 'шт', 'type' => 'integer'],
+        //    ['id' => 2, 'name' => 'мм', 'type' => 'float'],
+        //    ['id' => 3, 'name' => 'см', 'type' => 'float'],
+        //    ['id' => 4, 'name' => 'м', 'type' => 'float'],
+        //    ['id' => 5, 'name' => 'кг', 'type' => 'float'],
+        //    ['id' => 6, 'name' => 'т', 'type' => 'float'],
+        //    ['id' => 7, 'name' => 'л', 'type' => 'float'],
+        //    ['id' => 8, 'name' => 'кВт', 'type' => 'float'],
+        //    ['id' => 9, 'name' => 'л.с.', 'type' => 'float'],
+        //    ['id' => 10, 'name' => 'об/мин', 'type' => 'integer'],
+        //    ['id' => 11, 'name' => 'А', 'type' => 'float'],
+        //    ['id' => 12, 'name' => 'В', 'type' => 'float'],
+        //    ['id' => 13, 'name' => 'нет', 'type' => 'boolean'],
+        //    ['id' => 14, 'name' => 'есть/нет', 'type' => 'boolean'],
+        //    ['id' => 15, 'name' => 'текст', 'type' => 'text'],
+        //];
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'groups' => $groups,
+                'units'  => $units
+            ]
+        ]);
+    }
+
+    /**
+     * Обновление параметра
+     */
+    public function tech_update(Request $request, $id)
+    {
+        // ЗАГЛУШКА
+        usleep(500000);
+        return response()->json([
+            'success' => true,
+            'message' => 'Параметр успешно обновлен'
+        ]);
+
+        try {
+            $dbLm = DB::connection('livemachines');
+            $dbLm->beginTransaction();
+            
+            // Валидация
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'groups' => 'array',
+                'values' => 'array'
+            ]);
+            
+            // Обновляем название параметра
+            $updateSql = "
+                UPDATE `dirty_param_name`
+                SET `dirty_param_name_value` = ?
+                WHERE `dirty_param_name_id` = ?
+                    AND `dirty_param_name_dirty_type_id` = 1
+            ";
+            
+            $dbLm->update($updateSql, [$request->name, $id]);
+            
+            // Здесь будет логика обновления групп и значений
+            // Пока просто заглушка
+            
+            $dbLm->commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Параметр успешно обновлен'
+            ]);
+            
+        } catch (\Exception $e) {
+            $dbLm->rollBack();
+            
+            Log::error('Error updating param: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка обновления: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ---------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

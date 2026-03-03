@@ -118,6 +118,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('lm_sprav.tech_destroy')
         ->whereNumber('id');
 
+
+    Route::get('livemachines/sprav/tech/edit/{id}', [SpravController::class, 'tech_edit_data'])
+        ->name('lm_tech.edit_data')
+        ->whereNumber('id');
+
+    Route::get('livemachines/sprav/tech/references', [SpravController::class, 'tech_get_references'])
+        ->name('lm_tech.references');
+
+    Route::post('livemachines/sprav/tech/update/{id}', [SpravController::class, 'tech_update'])
+        ->name('lm_tech.update')
+        ->whereNumber('id');
+
+
+
+
+
+
     Route::get('livemachines/sprav/group', [SpravController::class, 'group_list'])
         ->name('lm_group.list');
 });
