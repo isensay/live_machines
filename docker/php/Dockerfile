@@ -26,7 +26,7 @@ RUN cp /usr/share/zoneinfo/Europe/Moscow /etc/localtime && echo "Europe/Moscow" 
 
 # Установка PHP расширений
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip dom
 
 # Установка Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
