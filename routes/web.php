@@ -37,6 +37,62 @@ Route::prefix('tests')->group(function () {
 
 });
 
+
+
+
+
+Route::get('/test-encrypt', function () {
+    try {
+        $encrypted = encrypt('test');
+        $decrypted = decrypt($encrypted);
+        return [
+            'status' => 'ok',
+            'encryption_works' => ($decrypted === 'test'),
+            'app_key' => config('app.key') ? 'set' : 'not set',
+        ];
+    } catch (\Exception $e) {
+        return [
+            'status' => 'error',
+            'message' => $e->getMessage(),
+        ];
+    }
+});
+
+Route::get('/test-session', function () {
+    try {
+        session(['test' => 'value']);
+        return [
+            'session_set' => true,
+            'session_get' => session('test'),
+            'session_driver' => config('session.driver'),
+        ];
+    } catch (\Exception $e) {
+        return [
+            'status' => 'error',
+            'message' => $e->getMessage(),
+        ];
+    }
+});
+
+Route::get('/test-db', function () {
+    try {
+        $users = DB::table('users')->count();
+        return [
+            'status' => 'ok',
+            'users_count' => $users,
+        ];
+    } catch (\Exception $e) {
+        return [
+            'status' => 'error',
+            'message' => $e->getMessage(),
+        ];
+    }
+});
+
+
+
+
+
 // ВСЕ ОСТАЛЬНЫЕ маршруты требуют авторизации и автоматически редиректят на /login
 Route::middleware(['auth', 'verified'])->group(function () {
 
