@@ -23,7 +23,7 @@
 
                         <div class="mb-2">
                             <label for="emailaddress" class="form-label"> {{ __('auth.login.email.title') }} </label>
-                            <input class="form-control @error('email') is-invalid @enderror" type="email" id="email" name="email" required="" placeholder="{{ __('auth.login.email.placeholder') }}" value="isensay@gmail.com{{-- old('email') --}}">
+                            <input class="form-control @error('email') is-invalid @enderror" type="email" id="email" name="email" required="" placeholder="{{ __('auth.login.email.placeholder') }}" value="{{-- old('email') --}}">
                             @error('email')
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
@@ -32,7 +32,7 @@
                         <div class="mb-2">
                             <label for="password" class="form-label"> {{ __('auth.login.password.title') }} </label>
                             <div class="input-group input-group-merge">
-                                <input class="form-control @error('password') is-invalid @enderror" type="password" id="password" name="password" placeholder="{{ __('auth.login.password.placeholder') }}" value="pit191002{{-- old('password', '') --}}">
+                                <input class="form-control @error('password') is-invalid @enderror" type="password" id="password" name="password" placeholder="{{ __('auth.login.password.placeholder') }}" value="{{-- old('password', '') --}}">
                             </div>
                             @error('password')
                                 <span class="text-danger">{{ $message }}</span>
