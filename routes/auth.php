@@ -12,8 +12,18 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
+    //Route::get('register', [RegisteredUserController::class, 'create'])
+    //    ->name('register');
+
+    if (app()->environment('local')) {
+        Route::get('register', [RegisteredUserController::class, 'create'])
+            ->name('register');
+    } else {
+        // В production возвращаем 401
+        Route::get('register', function() {
+            abort(401, 'Registration is disabled');
+        })->name('register');
+    }
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
