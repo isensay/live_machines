@@ -16,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Настройка trusted proxies
         $middleware->trustProxies(at: '*');
-
+        /*
         // Middleware для фикса IP на Mac
         $middleware->web(prepend: [
             \App\Http\Middleware\MacIpFix::class,
@@ -33,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
             'login.throttle' => \App\Http\Middleware\LoginThrottle::class,
         ]);
+        */
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         
