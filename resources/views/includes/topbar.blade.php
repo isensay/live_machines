@@ -145,7 +145,7 @@
                         <i class="mdi mdi-chevron-down"></i>
                     </span>
                     @else
-                    <img src="/source/base/images/users/avatar-0.jpg" alt="user-image" class="rounded-circle">
+                    <img src="/source/base/images/users/avatar-{{ auth()->id() }}.jpg" alt="user-image" class="rounded-circle">
                     <span class="pro-user-name ms-1">
                         {{ Auth::user()->name }} {{ Auth::user()->surname }} <i class="mdi mdi-chevron-down"></i>
                     </span>
