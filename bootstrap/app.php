@@ -6,7 +6,6 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
-//use Throwable;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -36,14 +35,28 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (HttpException $e, Request $request) {
+        
+        // Вспомогательные функции - ОПРЕДЕЛЯЕМ ИХ ЗДЕСЬ!
+        $getErrorTitle = function(int $status): string {
+            return trans('errors')['errors'][$status]['title'] ?? 'Error';
+        };
+        
+        $getErrorText = function(int $status): string {
+            return trans('errors')['errors'][$status]['text'] ?? 'An error occurred';
+        };
+        
+        $getErrorImage = function(int $status): string {
+            return "/source/base/images/errors/{$status}.svg";
+        };
+
+        $exceptions->render(function (HttpException $e, Request $request) use ($getErrorTitle, $getErrorText, $getErrorImage) {
             $status = $e->getStatusCode();
             
             // Для JSON запросов
             if ($request->expectsJson()) {
                 return response()->json([
-                    'error' => getErrorTitle($status),
-                    'message' => $e->getMessage() ?: getErrorText($status),
+                    'error' => $getErrorTitle($status),
+                    'message' => $e->getMessage() ?: $getErrorText($status),
                 ], $status);
             }
             
@@ -51,22 +64,22 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($status == 429)
             {
                 return response()->view('errors.429', [
-                    'title' => getErrorTitle($status),
-                    'text' => $e->getMessage() ?: getErrorText($status),
-                    'image' => getErrorImage($status),
+                    'title' => $getErrorTitle($status),
+                    'text' => $e->getMessage() ?: $getErrorText($status),
+                    'image' => $getErrorImage($status),
                 ], $status);
             }
             else
             {
                 return response()->view('errors.custom', [
-                    'title' => getErrorTitle($status),
-                    'text' => $e->getMessage() ?: getErrorText($status),
-                    'image' => getErrorImage($status),
+                    'title' => $getErrorTitle($status),
+                    'text' => $e->getMessage() ?: $getErrorText($status),
+                    'image' => $getErrorImage($status),
                 ], $status);
             }
         });
         
-        $exceptions->render(function (Throwable $e, Request $request) {
+        $exceptions->render(function (Throwable $e, Request $request) use ($getErrorTitle, $getErrorText, $getErrorImage) {
             // Для всех других исключений
             if ($request->expectsJson()) {
                 return response()->json([
@@ -76,9 +89,9 @@ return Application::configure(basePath: dirname(__DIR__))
             }
             
             return response()->view('errors.custom', [
-                'title' => getErrorTitle(500),
-                'text' => config('app.debug') ? $e->getMessage() : getErrorText(500),
-                'image' => getErrorImage(500),
+                'title' => $getErrorTitle(500),
+                'text' => config('app.debug') ? $e->getMessage() : $getErrorText(500),
+                'image' => $getErrorImage(500),
             ], 500);
         });
 
@@ -91,20 +104,4 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })->create();
 
-/*
-// Вспомогательные функции
-function getErrorTitle(int $status): string
-{
-   return trans('errors')['errors'][$status]['title'] ?? 'Error';
-}
-
-function getErrorText(int $status): string
-{
-    return trans('errors')['errors'][$status]['text'] ?? 'An error occurred';
-}
-
-function getErrorImage(int $status): string
-{
-    return "/source/base/images/errors/{$status}.svg";
-}
-*/
+// Удалите функции отсюда!
