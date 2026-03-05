@@ -30,7 +30,7 @@
         .select2-container--default .select2-selection--single:hover { border-color: #28a745; }
         */
 
-        /* ===== МОДАЛЬНОЕ ОКНО ===== */
+        /* ===== МОДАЛЬНОЕ ОКНО ===== 
         .modal-xl { max-width: 1300px; }
         .modal-content {
             border: none; border-radius: 0.5rem;
@@ -51,8 +51,9 @@
         }
         .modal-header .btn-close:hover { opacity: 1; }
         .modal-body { padding: 1.8rem; background-color: #f8fafc; }
+        */
 
-        /* ===== КАРТОЧКИ В МОДАЛКЕ ===== */
+        /* ===== КАРТОЧКИ В МОДАЛКЕ ===== 
         .modal-body .card {
             border: none; border-radius: 0.5rem; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
             margin-bottom: 1.5rem; background-color: #ffffff; transition: box-shadow 0.2s;
@@ -69,8 +70,9 @@
         .modal-body .card-header h5 i { color: #28a745; font-size: 1.2rem; margin-right: 8px; }
         .modal-body .card-body { padding: 1.5rem; background-color: #ffffff; }
         .modal-body .card:nth-child(even) .card-header { background-color: #f0f3f7 !important; }
+        */
 
-        /* ===== ФОРМЫ ===== */
+        /* ===== ФОРМЫ ===== 
         .modal-body .form-label {
             font-weight: 500; color: #495057; font-size: 0.9rem; margin-bottom: 0.4rem;
         }
@@ -85,7 +87,13 @@
             background-color: #f8f9fa; border-color: #e9ecef; color: #6c757d;
         }
 
-        /* ===== SELECT2 В МОДАЛКЕ ===== */
+        .select2-container .select2-selection--multiple .select2-selection__choice {line-height: 200% !important;}
+        .select2-container--default .select2-selection--multiple .select2-selection__clear {
+            margin-top: 9px;
+        }
+        */
+
+        /* ===== SELECT2 В МОДАЛКЕ ===== 
         .select2-container--default .select2-selection--multiple {
             border: 1px solid #dee2e6 !important; border-radius: 0.3rem !important;
             min-height: 40px; background-color: #ffffff;
@@ -125,10 +133,10 @@
         .select2-container--default .select2-selection--single .select2-selection__arrow {
             height: 40px !important;
         }
-        
+        */
         
 
-        /* ===== КНОПКИ ===== */
+        /* ===== КНОПКИ ===== 
         .modal-body .btn-outline-success {
             border: 1px dashed #28a745; color: #28a745; background: transparent;
             padding: 0.55rem 1.2rem; font-size: 0.9rem; transition: all 0.2s;
@@ -150,8 +158,9 @@
             transition: all 0.2s;
         }
         .remove-value-row:hover { background-color: #dc3545; color: white; }
+        */
 
-        /* ===== ТАБЛИЦА ЗНАЧЕНИЙ ===== */
+        /* ===== ТАБЛИЦА ЗНАЧЕНИЙ ===== 
         #values-table {
             border: 1px solid #e9ecef; border-radius: 0.4rem; overflow: hidden;
         }
@@ -168,8 +177,9 @@
         #values-table tfoot td {
             background-color: #f8f9fa; padding: 0.75rem; border-top: 2px solid #dee2e6;
         }
+            */
 
-        /* ===== ФУТЕР МОДАЛКИ ===== */
+        /* ===== ФУТЕР МОДАЛКИ ===== 
         .modal-footer {
             border-top: 1px solid #e9ecef; padding: 1.2rem 1.5rem;
             background-color: #f8fafc; border-radius: 0 0 0.5rem 0.5rem;
@@ -190,6 +200,7 @@
         .modal-footer .btn-success:hover {
             background-color: #218838; border-color: #1e7e34;
         }
+        */
 
         /* ===== АДАПТАЦИЯ ===== */
         @media (max-width: 768px) {
@@ -240,8 +251,8 @@
                             </label>
                         </div>
                         <div class="col-md-4">
-                            <select id="group-select2" class="form-control" style="width: 100%;">
-                                <option value="all">Все группы</option>
+                            <select id="group-select2" class="form-control" data-toggle="select2" style="width: 100%;">
+                                <option value="all">Все параметры</option>
                                 @foreach($groups as $group)
                                     <option value="{{ $group->id }}">{{ $group->name }}</option>
                                 @endforeach
@@ -249,7 +260,7 @@
                         </div>
                         <div class="col-md-auto">
                             <span class="text-muted small">
-                                <i class="mdi mdi-magnify"></i> Можно искать по названию
+                                <i class="mdi mdi-magnify"></i> Можно искать по названию группы
                             </span>
                         </div>
                     </div>
@@ -284,7 +295,7 @@
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title text-white" id="editParamModalLabel">
+                    <h4 class="modal-title" id="editParamModalLabel">
                         <i class="mdi mdi-pencil-circle"></i> Редактирование параметра
                     </h4>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -376,7 +387,7 @@
                                 </div>
                                 <small class="text-muted">
                                     <i class="mdi mdi-lightbulb-on-outline me-1"></i>
-                                    Для числовых значений используйте точку. Для типа "Да/Нет": 1 - Да, 0 - Нет.
+                                    Заполните единицу измерения и значение
                                 </small>
                             </div>
                         </div>
