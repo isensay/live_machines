@@ -16,6 +16,10 @@
             overflow-wrap: break-word; max-width: 200px;
         }
 
+        #createNewGroupBtn { height: 36px; }
+        #editParamModal .btn.remove-value-row { height: 36px; }
+        #editParamModal .card-header h5 { margin:0; }
+
         /* ===== SELECT2 ===== 
         .select2-container--default .select2-selection--single {
             background: none; border: 1px solid #dee2e6; border-radius: 0.25rem; height: 38px;
@@ -753,7 +757,7 @@ $(document).ready(function() {
             <tr class="value-row">
                 <td><select class="form-control unit-select" style="width: 100%;" name="units[]"></select></td>
                 <td><input type="text" class="form-control value-input" name="values[]" value="${value.value || ''}" placeholder="Значение"></td>
-                <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-value-row" title="Удалить"><i class="mdi mdi-delete"></i></button></td>
+                <td class="text-center"><button type="button" class="btn btn-sm btn-primary remove-value-row" title="Удалить"><i class="mdi mdi-delete"></i></button></td>
             </tr>
         `;
         
