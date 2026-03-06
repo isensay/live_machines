@@ -31,7 +31,7 @@
 
     <!-- App css -->
     <link href="/source/base/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-    <!-- <link href="/source/base/css/app.min.css?10" rel="stylesheet" type="text/css" id="app-stylesheet" /> -->
+    {{--<link href="/source/base/css/app.min.css?<?=time()?>" rel="stylesheet" type="text/css" id="app-stylesheet" />--}}
     <link href="/source/base/css/app.css?<?=time()?>" rel="stylesheet" type="text/css" id="app-stylesheet" />
 
     <!-- icons -->

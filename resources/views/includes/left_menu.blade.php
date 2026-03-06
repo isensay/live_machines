@@ -73,6 +73,7 @@
                     </div>
                 </li>
 
+                {{--
                 <li>
                     <a href="{{ route('maintenance') }}" class="waves-effect">
                         <i class="ri-tools-line"></i>
@@ -86,7 +87,7 @@
                         <span>{{ __('left_menu.cooming_soon') }}</span>
                     </a>
                 </li>
-
+                
                 <li>
                     <a href="#sidebarMultilevel1" data-bs-toggle="collapse" aria-expanded="false" aria-controls="sidebarMultilevel1">
                         <i class="ri-error-warning-line"></i>
@@ -117,6 +118,7 @@
                         </ul>
                     </div>
                 </li>
+                --}}
 
                 {{--
                 <li class="menu-title mt-2">Разное</li>

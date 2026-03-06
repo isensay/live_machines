@@ -16,7 +16,7 @@
                 </a>
             </li>
 
-            {{-- чтобы не отображать добавить класс "d-none" --}}
+            {{-- чтобы не отображать добавить класс "d-none" 
             <li class="dropdown d-lg-inline-block topbar-dropdown">
                 <a title="{{ __('topbar.hints.set_language') }}" class="nav-link dropdown-toggle arrow-none waves-effect waves-light" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
                     <img src="/source/base/images/flags/{{ str_replace('_', '-', app()->getLocale()) }}.jpg" alt="user-image" height="14">
@@ -44,7 +44,9 @@
 
                 </div>
             </li>
+            --}}
 
+            {{--
             <li class="dropdown notification-list topbar-dropdown">
                 <a title="{{ __('topbar.hints.show_notify') }}" class="nav-link dropdown-toggle waves-effect waves-light" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
                     <i class="fe-bell noti-icon"></i>
@@ -135,6 +137,7 @@
 
                 </div>
             </li>
+            --}}
 
             <li class="dropdown notification-list topbar-dropdown">
                 <a class="nav-link dropdown-toggle nav-user me-0 waves-effect waves-light" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
@@ -159,11 +162,13 @@
                     </div>
                     -->
 
+                    {{--
                     <!-- item-->
                     <a href="{{ route('profile') }}" class="dropdown-item notify-item">
                         <i class="ri-account-circle-line"></i>
                         <span>{{ __('topbar.user_menu.profile') }}</span>
                     </a>
+                    --}}
 
                     <!-- item-->
                     <a href="#theme-settings-offcanvas" class="dropdown-item notify-item" data-bs-toggle="offcanvas" href="#theme-settings-offcanvas">
