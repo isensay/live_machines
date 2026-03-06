@@ -35,6 +35,9 @@
     <!-- icons -->
     <link href="/source/base/css/icons.min.css" rel="stylesheet" type="text/css" />
 
+    <!-- Global style -->
+    <link href="/source/base/css/default.css" rel="stylesheet" type="text/css" />
+
     <!-- Theme Config Js -->
     <script src="/source/base/js/config.js?1"></script>
     
