@@ -71,11 +71,10 @@ class SpravController extends Controller
             $whereGroup = ($groupId > 0) ? "AND `dirty_param_dirty_group_id` = ".$pdo->quote((int)$groupId) : "";
             //$innerGroup = ($groupId > 0) ? "INNER JOIN `dirty_param` ON (`dirty_param_name_id` = `dirty_param_dirty_param_name_id` AND `dirty_param_dirty_type_id` = `dirty_param_name_dirty_type_id` AND `dirty_param_remove_user_id` = 0 AND `dirty_param_dirty_group_id` = ".$pdo->quote((int)$groupId).")" : "";
         }
-             
-
-        usleep(200000);
-
         
+        if (config('app.debug')) {
+            usleep(200000);
+        }
         
         $sql =
         "
@@ -257,7 +256,9 @@ class SpravController extends Controller
             $groups = $dbLm->select($groupsSql, [$id]);
 
             // ЗАГЛУШКА
-            usleep(500000);
+            if (config('app.debug')) {
+                usleep(500000);
+            }
             
             // Получаем единицы измерения и значения
             $valuesSql = "
@@ -384,7 +385,10 @@ class SpravController extends Controller
     public function tech_update(Request $request, $id)
     {
         // ЗАГЛУШКА
-        usleep(500000);
+        if (config('app.debug')) {
+            usleep(500000);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Параметр успешно обновлен'
