@@ -330,9 +330,9 @@ class SpravController extends Controller
             $unitsSql = "
                 (
                     SELECT
-                        0                  as `id`,
-                        'Выберите единицу' as `name`,
-                        'text'             as `type`
+                        0          as `id`,
+                        'Выберите' as `name`,
+                        'text'     as `type`
                 )
                 UNION
                 (
