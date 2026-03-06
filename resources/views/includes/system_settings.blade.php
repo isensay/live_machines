@@ -305,12 +305,12 @@
 
                     <!-- Topbar -->
                     <h6 class="fw-medium font-14 mt-4 mb-2 pb-1"> {{ __('system_settings.scheme.topbar.title') }} </h6>
-                    {{--
+                    
                     <div class="form-check form-switch mb-1">
                         <input class="form-check-input" type="checkbox" name="data-topbar-color" value="light" id="lighttopbar-check">
                         <label class="form-check-label" for="lighttopbar-check"> {{ __('system_settings.scheme.topbar.light') }} </label>
                     </div>
-                    --}}
+                    
 
                     <div class="form-check form-switch mb-1">
                         <input class="form-check-input" type="checkbox" name="data-topbar-color" value="dark" id="darktopbar-check" checked>
@@ -338,12 +338,12 @@
 
                     <!-- Menu Color-->
                     <h6 class="fw-medium font-14 mt-4 mb-2 pb-1"> {{ __('system_settings.scheme.menu_color.title') }} </h6>
-                    {{--
+                    
                     <div class="form-check form-switch mb-1">
                         <input class="form-check-input" type="checkbox" name="data-menu-color" value="light" id="light-check" checked>
                         <label class="form-check-label" for="light-check"> {{ __('system_settings.scheme.menu_color.light') }} </label>
                     </div>
-                    --}}
+                    
 
                     <div class="form-check form-switch mb-1">
                         <input class="form-check-input" type="checkbox" name="data-menu-color" value="dark" id="dark-check">
