@@ -24,8 +24,6 @@
     <!-- plugin css -->
     <!-- <link href="/source/base/libs/admin-resources/jquery.vectormap/jquery-jvectormap-1.2.2.css" rel="stylesheet" type="text/css" /> -->
 
-    
-
     {{-- Add other js or css --}}
     @yield('head_other')
 
@@ -39,6 +37,5 @@
 
     <!-- Theme Config Js -->
     <script src="/source/base/js/config.js?1"></script>
-
     
 </head>

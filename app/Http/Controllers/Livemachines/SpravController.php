@@ -328,17 +328,26 @@ class SpravController extends Controller
             $groups = $dbLm->select($groupsSql);
 
             $unitsSql = "
-                SELECT
-                    `dirty_param_unit_id`    as `id`,
-                    `dirty_param_unit_value` as `name`,
-                    'text'                   as `type`
-                FROM `dirty_param_unit`
-                WHERE 1
-                    AND `dirty_param_unit_dirty_type_id` = 1
-                GROUP BY
-                    `id`
-                ORDER BY
-                    `name` ASC
+                (
+                    SELECT
+                        0      as `id`,
+                        ''     as `name`,
+                        'text' as `type`
+                )
+                UNION
+                (
+                    SELECT
+                        `dirty_param_unit_id`    as `id`,
+                        `dirty_param_unit_value` as `name`,
+                        'text'                   as `type`
+                    FROM `dirty_param_unit`
+                    WHERE 1
+                        AND `dirty_param_unit_dirty_type_id` = 1
+                    GROUP BY
+                        `id`
+                    ORDER BY
+                        `name` ASC
+                )
             ";
             
             $units = $dbLm->select($unitsSql);

@@ -232,7 +232,7 @@
     <!-- start page title -->
     <div class="row">
         <div class="col-12">
-            <div class="page-title-box">
+            <div class="page-title-box sticky">
                 <h4 class="page-title">Справочник технических характеристик</h4>
                 <div class="page-title-right">
                     <a href="#" class="btn btn-success btn-rounded">
@@ -468,83 +468,7 @@
 @push('scripts')
 <script>
 
-function createStickyHeader() {
-    var $originalHeader = $('.page-title-box').first();
-    var $window = $(window);
-    var $contentPage = $('.content-page');
-    var headerTop = $originalHeader.offset().top;
-    
-    $('.sticky-header-clone').remove();
-    
-    // Функция проверки режима
-    function isFixedMode() {
-        return $('body').attr('data-layout-position') !== 'scrollable' && 
-               $('html').attr('data-layout-position') !== 'scrollable';
-    }
-    
-    var $clone = $originalHeader.clone();
-    $clone.addClass('sticky-header-clone');
-    $originalHeader.before($clone);
-    
-    $clone.hide();
-    
-    var originalWidth = $originalHeader.outerWidth();
-    var originalHeight = $originalHeader.outerHeight();
-    
-    $clone.css({
-        'position': 'fixed',
-        'top': '70px',
-        'width': originalWidth + 'px',
-        'height': originalHeight + 'px',
-        'z-index': 10,
-        'background-color': $originalHeader.css('background-color'),
-        'margin': '0',
-        'border': 'none',
-    });
-    
-    function updateSticky() {
-        // Если режим не фиксированный, ничего не делаем
-        if (!isFixedMode()) {
-            $clone.hide();
-            $originalHeader.css('visibility', 'visible');
-            return;
-        }
-        
-        var scrollTop = $window.scrollTop();
-        
-        if (scrollTop > headerTop - 70) {
-            var currentColor = $originalHeader.css('background-color');
-            $clone.css({
-                'left': $contentPage.offset().left + 'px',
-                'background-color': currentColor
-            }).show();
-            $originalHeader.css('visibility', 'hidden');
-        } else {
-            $clone.hide();
-            $originalHeader.css('visibility', 'visible');
-        }
-    }
-    
-    $window.on('scroll', updateSticky);
-    $window.on('resize', function() {
-        headerTop = $originalHeader.offset().top;
-        updateSticky();
-    });
-    
-    // Отслеживаем изменение режима
-    var observer = new MutationObserver(function() {
-        updateSticky();
-    });
-    
-    observer.observe(document.body, { 
-        attributes: true, 
-        attributeFilter: ['data-layout-position'] 
-    });
-}
-
-
 $(document).ready(function() {
-    setTimeout(createStickyHeader, 100);
 
     // ===== ИНИЦИАЛИЗАЦИЯ =====
     let table;
@@ -563,6 +487,7 @@ $(document).ready(function() {
     // ===== DATATABLE =====
     function initDataTable() {
         table = $('#basic-datatable').DataTable({
+            scrollX: true,
             processing: true,
             serverSide: false,
             ajax: {
@@ -627,7 +552,7 @@ $(document).ready(function() {
                     references.groups = response.data.groups;
                     references.units = response.data.units;
                     referencesLoaded = true;
-                    console.log('References loaded:', references); // Для отладки
+                    //('References loaded:', references); // Для отладки
                     
                     // Инициализируем Select2 для групп пустыми данными
                     initGroupSelect();
@@ -665,7 +590,7 @@ $(document).ready(function() {
             }
         });
         
-        console.log('Group select initialized with', references.groups.length, 'groups');
+        //console.log('Group select initialized with', references.groups.length, 'groups');
     }
     
     // ===== ОБРАБОТЧИКИ СОБЫТИЙ =====
@@ -782,7 +707,7 @@ $(document).ready(function() {
     
     // ===== ЗАПОЛНЕНИЕ МОДАЛЬНОГО ОКНА =====
     function fillEditModal(data) {
-        console.log('Filling modal with data:', data);
+        //console.log('Filling modal with data:', data);
         
         $('#edit_param_id').val(data.param.id);
         $('#edit_param_name').val(data.param.name);
@@ -817,7 +742,7 @@ $(document).ready(function() {
         // Устанавливаем выбранные группы
         if (data.groups && data.groups.length > 0) {
             const groupIds = data.groups.map(g => g.id);
-            console.log('Setting groups:', groupIds);
+            //console.log('Setting groups:', groupIds);
             $groupSelect.val(groupIds).trigger('change');
         }
         

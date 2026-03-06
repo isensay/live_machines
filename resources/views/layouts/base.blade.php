@@ -55,6 +55,9 @@
         <!-- App js -->
         <script src="/source/base/js/app.min.js"></script>
 
+        <!-- Global scripts -->
+        <script src="/source/base/js/default.js?<?=time()?>"></script>
+
         {{-- More Java Script --}}
         @yield('page_more_java_script')
 
