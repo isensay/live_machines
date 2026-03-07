@@ -1,20 +1,10 @@
 <head>
     <meta charset="utf-8" />
     
-    @if (isset($error_title))
-    <title>{{ $error_pre_title }} {{ $httpStatusCode }} | {{ $error_title }} | {{ config('app.name') }} </title>
-    @elseif (__(Route::currentRouteName() == 'logout'))
-    <title> {{ __('auth.logout.title') }} | {{ config('app.name') }} </title>
-    @elseif (__(Route::currentRouteName() == 'login'))
-    <title> {{ __('auth.login.title') }} | {{ config('app.name') }} </title>
-    @elseif (__(Route::currentRouteName() == 'maintenance'))
-    <title> {{ __('errors.errors.503.title') }} | {{ config('app.name') }} </title>
-    @else
-    <title> {{ __(Route::currentRouteName().'.page_title') }} | {{ config('app.name') }} </title>
-    @endif
+    <title>@yield('head_title') | {{ config('app.name') }}</title>
 
-    <meta name="description" content="" />
-    <meta name="author" content="Petr Minkin"  />
+    <meta name="description" content="@yield('head_description')" />
+    <meta name="author" content="{{ env('APP_AUTHOR') }}"  />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     

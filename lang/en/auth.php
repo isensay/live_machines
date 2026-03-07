@@ -73,4 +73,9 @@ return [
 
     ],
 
+    'register' =>
+    [
+        'title'      => 'Register',
+    ],
+
 ];

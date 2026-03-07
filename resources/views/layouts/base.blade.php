@@ -61,8 +61,8 @@
         {{-- More Java Script --}}
         @yield('page_more_java_script')
 
-        {{-- Здесь выведется все что добавлялось через: @push('name') + @endpush --}}
-        @stack('scripts')
+        {{-- Здесь выведется все что добавлялось через: @push('name') + @endpush 
+        @stack('scripts')--}}
         
     </body>
 </html>

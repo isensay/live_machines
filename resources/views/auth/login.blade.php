@@ -1,5 +1,7 @@
 @extends('layouts.lite')
 
+@section('head_title', __('auth.login.title'))
+
 {{-- Auth text --}}
 @section('auth_text')
 {{ __('auth.login.page_text') }}
@@ -72,7 +74,9 @@
             <div class="row mt-3">
                 <div class="col-12 text-center">
                     <p> <a href="{{ route('password.request') }}" class="text-muted ms-1"> {{ __('auth.login.forgot_password') }} </a></p>
+                    @if(App::environment('local'))
                     <p class="text-muted"> {{ __('auth.login.dont_have_account') }} <a href="{{ route('register') }}" class="text-primary fw-medium ms-1"> {{ __('auth.login.sign_up') }} </a></p>
+                    @endif
                 </div> <!-- end col -->
             </div>
             <!-- end row -->

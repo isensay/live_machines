@@ -1,5 +1,8 @@
 @extends('layouts.base')
 
+@section('head_title', __('home.page_title'))
+@section('head_description', '')
+
 {{-- Page Content --}}
 @section('page_content')
     

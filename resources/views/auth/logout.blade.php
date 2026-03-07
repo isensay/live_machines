@@ -1,8 +1,6 @@
 @extends('layouts.lite')
 
-{{-- Auth text --}}
-@section('auth_text')
-@endsection
+@section('head_title', __('auth.logout.title'))
 
 {{-- Page Content --}}
 @section('page_content')
@@ -34,9 +32,9 @@
                     </div>
                     </div>
 
-                    <h3>See you again !</h3>
+                    <h3>{{ __('auth.logout.page_title') }}</h3>
 
-                    <p class="text-muted"> You are now successfully sign out. </p>
+                    <p class="text-muted"> {{ __('auth.logout.page_text') }} </p>
                 </div>
 
 
@@ -46,7 +44,7 @@
 
         <div class="row mt-3">
             <div class="col-12 text-center">
-                <p class="text-muted">Back to <a href="{{ route('login') }}" class="text-primary fw-medium ms-1">Sign In</a></p>
+                <p class="text-muted">{{ __('auth.logout.back_to') }} <a href="{{ route('login') }}" class="text-primary fw-medium ms-1">{{ __('auth.logout.sign_in') }}</a></p>
             </div> <!-- end col -->
         </div>
         <!-- end row -->

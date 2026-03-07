@@ -68,7 +68,7 @@ $(document).ready(function() {
                 }
             ],
             language: {
-                processing: '<div style="margin:20px;" class="spinner-border text-success" role="status"><span class="visually-hidden">Загрузка...</span></div>',
+                processing: '<div style="zmargin:20px;" class="spinner-border text-success" role="status"></div>',
                 search: "Поиск:", 
                 lengthMenu: "Показать _MENU_ записей",
                 info: "Показаны с _START_ по _END_ из _TOTAL_ записей",

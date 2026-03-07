@@ -1,5 +1,7 @@
 @extends('layouts.lite')
 
+@section('head_title', __('auth.register.title'))
+
 {{-- Auth text --}}
 @section('auth_text')
 Don't have an account? Create your own account, it takes less than a minute

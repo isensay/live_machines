@@ -1,5 +1,7 @@
 @extends('layouts.base')
 
+@section('head_title', 'Справочник стран')
+
 {{-- Page Content --}}
 @section('page_content')
     
@@ -10,7 +12,9 @@
     <div class="row" style1="position: static; top: 70px; z-index: 99;">
         <div class="col-12">
             <div class="page-title-box">
-                <h4 class="page-title">Справочник стран</h4>
+                <h4 class="page-title">
+                    @yield('head_title')
+                </h4>
                 <div class="page-title-right">
                     <div class="page-title-right">
                         <a href="{{-- route('livemachines.sprav.create') --}}" class="btn btn-success btn-rounded">

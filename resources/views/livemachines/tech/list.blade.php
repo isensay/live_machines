@@ -1,5 +1,7 @@
 @extends('layouts.base')
 
+@section('head_title', 'Справочник технических характеристик')
+
 {{-- Page Content --}}
 @section('page_content')
 
@@ -8,7 +10,7 @@
         <div class="col-12">
             <div class="page-title-box sticky">
                 <h4 class="page-title">
-                    Справочник технических характеристик
+                    @yield('head_title')
                 </h4>
                 <div class="page-title-right">
                     <a href="#" class="btn btn-success btn-rounded">
@@ -255,7 +257,6 @@
     </div>
 
 @endsection
-
 
 @section('head_other')
     <meta name="csrf-token" content="{{ csrf_token() }}">
