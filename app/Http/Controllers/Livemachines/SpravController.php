@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Services\CacheService;
 
 class SpravController extends Controller
 {
@@ -53,10 +54,76 @@ class SpravController extends Controller
         ]);
     }
 
+    public function tech_data_ajax(Request $request)
+    {
+        $groupId = $request->get('group_id', 'none');
+        $baseKey = 'tech_data_' . md5($groupId);
+        $tags = ['livemachines', 'tech_data'];
+        $versionKey = 'dirty_tables_version';
+
+        //CacheService::clearTags($tags);
+
+        $data = CacheService::remember(
+            $baseKey,
+            $tags,
+            function () use ($request) {
+                // Подключаемся к БД
+                $dbLm = DB::connection('livemachines');
+                $pdo = $dbLm->getPdo();
+
+                // Условие по группе
+                if ($request->get('group_id') == 'none') {
+                    $whereGroup = "AND `dirty_param_dirty_group_id` = 0";
+                } else {
+                    $groupId = (int) $request->get('group_id');
+                    $whereGroup = $groupId > 0
+                        ? "AND `dirty_param_dirty_group_id` = " . $pdo->quote($groupId)
+                        : "";
+                }
+
+                // Отладочная задержка
+                if (config('app.debug')) {
+                    usleep(200000);
+                }
+
+                $sql = "
+                    SELECT
+                        `dirty_param_name_id`    as `paramNameId`,
+                        `dirty_param_name_value` as `paramName`,
+                        GROUP_CONCAT(DISTINCT IF(`dirty_group_name` IS NOT NULL, `dirty_group_name`, '-') SEPARATOR '<br><br>') as `groups`,
+                        GROUP_CONCAT(DISTINCT `dirty_file_name`  SEPARATOR '<br>') as `files`
+                    FROM `dirty_param_name`
+                        LEFT JOIN `dirty_param` ON (
+                            `dirty_param_name_id` = `dirty_param_dirty_param_name_id`
+                            AND `dirty_param_dirty_type_id` = `dirty_param_name_dirty_type_id`
+                            AND `dirty_param_remove_user_id` = 0
+                        )
+                        LEFT JOIN `dirty_file` ON (`dirty_file_id` = `dirty_param_dirty_file_id`)
+                        LEFT JOIN `dirty_group` ON (
+                            `dirty_group_id` = `dirty_param_dirty_group_id`
+                            AND `dirty_group_dirty_type_id` = `dirty_param_name_dirty_type_id`
+                        )
+                    WHERE 1
+                        AND `dirty_param_name_dirty_type_id` = 1
+                        AND (dirty_file_id IS NULL OR `dirty_file_remove_user_id` = 0)
+                        {$whereGroup}
+                    GROUP BY `paramNameId`
+                ";
+
+                return $dbLm->select($sql);
+            },
+            $versionKey,
+            3600,        // TTL 1 час
+            6            // уровень сжатия
+        );
+
+        return response()->json(['data' => $data]);
+    }
+
     /**
      * Get data for AJAX
      */
-    public function tech_data_ajax(Request $request)
+    public function tech_data_ajax11(Request $request)
     {
         $dbLm = DB::connection('livemachines');
         $pdo = $dbLm->getPdo();
@@ -162,6 +229,8 @@ class SpravController extends Controller
             if ($updated)
             {
                 $dbLm->commit();
+
+                CacheService::clearTags(['livemachines', 'tech_data']);
 
                 if (request()->ajax()) {
                     return response()->json([
@@ -423,6 +492,8 @@ class SpravController extends Controller
             ";
             
             $dbLm->update($updateSql, [$request->name, $id]);
+
+            CacheService::clearTags(['livemachines', 'tech_data']);
             
             // Здесь будет логика обновления групп и значений
             // Пока просто заглушка
