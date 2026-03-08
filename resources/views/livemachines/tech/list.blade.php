@@ -1,6 +1,6 @@
 @extends('layouts.base')
 
-@section('head_title', 'Справочник технических характеристик.')
+@section('head_title', 'Справочник технических характеристик')
 
 {{-- Page Content --}}
 @section('page_content')
