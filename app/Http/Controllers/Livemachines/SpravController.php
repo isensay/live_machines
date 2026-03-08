@@ -56,37 +56,56 @@ class SpravController extends Controller
 
     public function tech_data_ajax(Request $request)
     {
+        // Параметры DataTable
+        $draw = $request->get('draw');
+        $start = (int) $request->get('start', 0);
+        $length = (int) $request->get('length', 10);
+        $search = $request->get('search')['value'] ?? '';
+        $orderColumn = $request->get('order')[0]['column'] ?? 0;
+        $orderDir = $request->get('order')[0]['dir'] ?? 'asc';
+        
         $groupId = $request->get('group_id', 'none');
-        $baseKey = 'tech_data_' . md5($groupId);
+        
+        // Маппинг колонок для сортировки
+        $columns = [
+            0 => 'paramName',
+            1 => 'groups',
+            2 => 'files',
+        ];
+        
+        // КЛЮЧ КЭША
+        $cacheKey = 'tech_data_' . md5(
+            $groupId . '_' . 
+            $search . '_' . 
+            $orderColumn . '_' . 
+            $orderDir . '_' .
+            $start . '_' . 
+            $length
+        );
+        
         $tags = ['livemachines', 'tech_data'];
         $versionKey = 'dirty_tables_version';
 
-        //CacheService::clearTags($tags);
-
-        $data = CacheService::remember(
-            $baseKey,
+        //CacheService::clearTags(['livemachines', 'tech_data']);
+        
+        $result = CacheService::remember(
+            $cacheKey,
             $tags,
-            function () use ($request) {
-                // Подключаемся к БД
+            function () use ($groupId, $search, $orderColumn, $orderDir, $start, $length, $columns) {
+                
                 $dbLm = DB::connection('livemachines');
                 $pdo = $dbLm->getPdo();
-
+                
                 // Условие по группе
-                if ($request->get('group_id') == 'none') {
+                if ($groupId == 'none') {
                     $whereGroup = "AND `dirty_param_dirty_group_id` = 0";
                 } else {
-                    $groupId = (int) $request->get('group_id');
-                    $whereGroup = $groupId > 0
-                        ? "AND `dirty_param_dirty_group_id` = " . $pdo->quote($groupId)
-                        : "";
+                    $groupIdInt = (int)$groupId;
+                    $whereGroup = ($groupIdInt > 0) ? "AND `dirty_param_dirty_group_id` = ".$pdo->quote($groupIdInt) : "";
                 }
-
-                // Отладочная задержка
-                if (config('app.debug')) {
-                    usleep(200000);
-                }
-
-                $sql = "
+                
+                // ===== БАЗОВЫЙ ЗАПРОС =====
+                $baseSql = "
                     SELECT
                         `dirty_param_name_id`    as `paramNameId`,
                         `dirty_param_name_value` as `paramName`,
@@ -94,13 +113,13 @@ class SpravController extends Controller
                         GROUP_CONCAT(DISTINCT `dirty_file_name`  SEPARATOR '<br>') as `files`
                     FROM `dirty_param_name`
                         LEFT JOIN `dirty_param` ON (
-                            `dirty_param_name_id` = `dirty_param_dirty_param_name_id`
-                            AND `dirty_param_dirty_type_id` = `dirty_param_name_dirty_type_id`
+                            `dirty_param_name_id` = `dirty_param_dirty_param_name_id` 
+                            AND `dirty_param_dirty_type_id` = `dirty_param_name_dirty_type_id` 
                             AND `dirty_param_remove_user_id` = 0
                         )
                         LEFT JOIN `dirty_file` ON (`dirty_file_id` = `dirty_param_dirty_file_id`)
                         LEFT JOIN `dirty_group` ON (
-                            `dirty_group_id` = `dirty_param_dirty_group_id`
+                            `dirty_group_id` = `dirty_param_dirty_group_id` 
                             AND `dirty_group_dirty_type_id` = `dirty_param_name_dirty_type_id`
                         )
                     WHERE 1
@@ -109,15 +128,59 @@ class SpravController extends Controller
                         {$whereGroup}
                     GROUP BY `paramNameId`
                 ";
-
-                return $dbLm->select($sql);
+                
+                // ===== ПОДСЧЕТ ОБЩЕГО КОЛИЧЕСТВА =====
+                $countSql = "SELECT COUNT(*) as total FROM ({$baseSql}) as temp";
+                $totalResult = $dbLm->selectOne($countSql);
+                $totalRecords = $totalResult->total ?? 0;
+                
+                // ===== ПРИМЕНЯЕМ ПОИСК =====
+                $searchSql = $baseSql;
+                if (!empty($search)) {
+                    $searchTerm = $pdo->quote('%' . $search . '%');
+                    $searchSql = "
+                        SELECT * FROM ({$baseSql}) as searched 
+                        WHERE 
+                            `paramName` LIKE {$searchTerm} 
+                            OR `groups` LIKE {$searchTerm}
+                            OR `files` LIKE {$searchTerm}
+                    ";
+                    
+                    // Пересчитываем количество после поиска
+                    $countFilteredSql = "SELECT COUNT(*) as total FROM ({$searchSql}) as filtered";
+                    $filteredResult = $dbLm->selectOne($countFilteredSql);
+                    $totalRecords = $filteredResult->total ?? 0;
+                }
+                
+                // ===== ПРИМЕНЯЕМ СОРТИРОВКУ =====
+                if (isset($columns[$orderColumn])) {
+                    $orderField = $columns[$orderColumn];
+                    $searchSql .= " ORDER BY `{$orderField}` {$orderDir}";
+                }
+                
+                // ===== ПРИМЕНЯЕМ ПАГИНАЦИЮ =====
+                $searchSql .= " LIMIT {$start}, {$length}";
+                
+                // Выполняем финальный запрос
+                $data = $dbLm->select($searchSql);
+                
+                return [
+                    'data' => $data,
+                    'total' => $totalRecords,
+                ];
+                
             },
             $versionKey,
-            3600,        // TTL 1 час
-            6            // уровень сжатия
+            3600,
+            6
         );
-
-        return response()->json(['data' => $data]);
+        
+        return response()->json([
+            'draw' => $draw,
+            'recordsTotal' => $result['total'],
+            'recordsFiltered' => $result['total'],
+            'data' => $result['data']
+        ]);
     }
 
     /**

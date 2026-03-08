@@ -40,6 +40,39 @@
 div.dataTables_processing { margin-top:0px !important; height: 52px !important; padding:10px !important; }
 
 
+/* ===== ЧТОБЫ ПАГИНАЦИЯ НЕ СМЕЩАЛАСЬ ВВЕРХ ===== */
+/* Выравнивание информации о записях */
+.dataTables_info {
+    padding-top: 0.85em !important;
+    line-height: 2.5 !important;
+}
+/* Выравнивание пагинации */
+.dataTables_paginate {
+    padding-top: 0.5em !important;
+    float: right !important;
+}
+/* Для мобильных устройств */
+@media (max-width: 767px) {
+    .dataTables_info {
+        text-align: center !important;
+        padding-bottom: 10px !important;
+    }
+    
+    .dataTables_paginate {
+        text-align: center !important;
+        float: none !important;
+    }
+}
+/* Выравнивание контейнера с пагинацией */
+div.dataTables_wrapper div.dataTables_paginate {
+    margin-top: 0 !important;
+    text-align: right;
+}
+/* Стили для pagination-rounded (если используете) */
+.pagination-rounded .page-link {
+    border-radius: 30px !important;
+    margin: 0 3px !important;
+}
 
 
 

@@ -3,7 +3,7 @@ $(document).ready(function() {
     // ===== ИНИЦИАЛИЗАЦИЯ =====
     let table;
     const references = { groups: [], units: [] };
-    let referencesLoaded = false; // Флаг загрузки справочников
+    let referencesLoaded = false;
     
     // Получаем CSRF-токен из мета-тега
     const csrfToken = $('meta[name="csrf-token"]').attr('content');
@@ -25,27 +25,49 @@ $(document).ready(function() {
         $('#group-select2').select2({ minimumInputLength: 0, language: 'ru' });
     }
     
-    // ===== DATATABLE =====
+    // ===== DATATABLE В РЕЖИМЕ SERVER-SIDE =====
     function initDataTable() {
         table = $('#basic-datatable').DataTable({
             scrollX: true,
             processing: true,
-            serverSide: false,
+            serverSide: true, // Включаем server-side режим
             ajax: {
-                url: dataUrl, // Используем data-атрибут
+                url: dataUrl,
                 type: 'GET',
-                data: (d) => { d.group_id = $('#group-select2').val(); },
-                dataSrc: 'data',
+                data: function(d) {
+                    // Добавляем наш кастомный параметр group_id
+                    d.group_id = $('#group-select2').val();
+                    
+                    // DataTable автоматически отправляет:
+                    // d.start - смещение (для пагинации)
+                    // d.length - количество записей на странице
+                    // d.search.value - поисковый запрос
+                    // d.order - сортировка
+                },
                 error: (xhr, error, thrown) => {
-                    console.error('DataTable error:', error);
+                    console.error('DataTable error:', error, thrown);
                 }
             },
             columns: [
-                { data: 'paramName' },
-                { data: 'groups', render: (data) => data || '<span class="text-muted">-</span>' },
-                { data: 'files',  render: (data) => data || '<span class="text-muted">-</span>' },
+                { 
+                    data: 'paramName',
+                    name: 'paramName' // имя колонки для сортировки
+                },
+                { 
+                    data: 'groups', 
+                    name: 'groups',
+                    render: (data) => data || '<span class="text-muted">-</span>' 
+                },
+                { 
+                    data: 'files',  
+                    name: 'files',
+                    render: (data) => data || '<span class="text-muted">-</span>' 
+                },
                 {
                     data: 'paramNameId',
+                    name: 'actions',
+                    orderable: false, // отключаем сортировку для колонки действий
+                    searchable: false, // отключаем поиск для колонки действий
                     render: (data, type, row) => `
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-danger btn-sm btn-rounded edit-btn" 
@@ -68,7 +90,7 @@ $(document).ready(function() {
                 }
             ],
             language: {
-                processing: '<div style="zmargin:20px;" class="spinner-border text-success" role="status"></div>',
+                processing: '<div style="margin:20px;" class="spinner-border text-success" role="status"></div>',
                 search: "Поиск:", 
                 lengthMenu: "Показать _MENU_ записей",
                 info: "Показаны с _START_ по _END_ из _TOTAL_ записей",
@@ -95,7 +117,7 @@ $(document).ready(function() {
     // ===== ЗАГРУЗКА СПРАВОЧНИКОВ =====
     function loadReferences() {
         $.ajax({
-            url: referencesUrl, // Используем data-атрибут
+            url: referencesUrl,
             type: 'GET',
             success: (response) => {
                 if (response.success) {
@@ -141,10 +163,27 @@ $(document).ready(function() {
     }
     
     // ===== ОБРАБОТЧИКИ СОБЫТИЙ =====
-    $('#group-select2').on('change', () => {
-        table.state.clear();
-        table.ajax.reload();
+    $('#group-select2').on('change', function() {
+        // 1. Очищаем поисковой запрос в DataTable
+        table.search('').draw();
+        
+        // 2. Очищаем визуально поле поиска
+        $('div.dataTables_filter input').val('');
+        
+        // 3. Перезагружаем таблицу с первой страницы
+        table.ajax.reload(null, true); // true = сброс на страницу 1
+        
+        // Логирование для отладки
+        console.log('Group changed to:', $(this).val(), 'Reset to page 1');
     });
+    /*
+    $('#group-select2').on('change', () => {
+        // При смене фильтра перезагружаем таблицу с первой страницы
+        table.ajax.reload(null, false); // false - остаться на текущей странице? 
+        // Для фильтра лучше сбрасывать на первую страницу:
+        // table.ajax.reload(null, true);
+    });
+    */
     
     // ===== УДАЛЕНИЕ =====
     $('#basic-datatable').on('click', '.delete-btn', function(e) {
@@ -178,13 +217,9 @@ $(document).ready(function() {
                 },
                 success: (response) => {
                     if (response.success) {
-                        $row.fadeOut(400, () => {
-                            table.row($row).remove().draw(false);
-                            if (table.page.info().recordsDisplay > 0 && 
-                                table.page.info().recordsDisplay <= table.page.info().start) {
-                                table.page('previous').draw(false);
-                            }
-                        });
+                        // Удаляем строку из таблицы без перезагрузки
+                        table.row($row).remove().draw(false); // false = остаться на текущей странице
+                        
                         Swal.fire({ 
                             title: 'Удалено!', 
                             text: response.message, 
@@ -495,7 +530,9 @@ $(document).ready(function() {
                         timer: 1500,
                         showConfirmButton: false
                     });
-                    table.ajax.reload(null, false);
+                    
+                    // Перезагружаем таблицу, чтобы увидеть изменения
+                    table.ajax.reload(null, false); // false = остаться на текущей странице
                 } else {
                     Swal.fire({ title: 'Ошибка!', text: response.message, icon: 'error' });
                 }
