@@ -1,0 +1,16 @@
+/* По умолчанию показываем десктопный заголовок, скрываем мобильный */
+h4 span.title-mobile {
+    display: none;
+}
+h4 span.title-default {
+    display: inline;
+}
+/* На мобильных устройствах */
+@media (max-width: 768px) {
+    h4 span.title-mobile {
+        display: inline;
+    }
+    h4 span.title-default {
+        display: none;
+    }
+}
