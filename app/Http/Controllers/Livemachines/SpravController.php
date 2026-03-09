@@ -57,12 +57,12 @@ class SpravController extends Controller
     public function tech_data_ajax(Request $request)
     {
         // Параметры DataTable
-        $draw = $request->get('draw');
-        $start = (int) $request->get('start', 0);
-        $length = (int) $request->get('length', 10);
-        $search = $request->get('search')['value'] ?? '';
+        $draw        = $request->get('draw');
+        $start       = (int)$request->get('start', 0);
+        $length      = (int)$request->get('length', 10);
+        $search      = $request->get('search')['value'] ?? '';
         $orderColumn = $request->get('order')[0]['column'] ?? 0;
-        $orderDir = $request->get('order')[0]['dir'] ?? 'asc';
+        $orderDir    = $request->get('order')[0]['dir'] ?? 'asc';
         
         $groupId = $request->get('group_id', 'none');
         
@@ -86,7 +86,7 @@ class SpravController extends Controller
         $tags       = ['livemachines', 'tech_data'];
         $versionKey = 'dirty_tables_version';
 
-        CacheService::clearTags(['livemachines', 'tech_data']);
+        //CacheService::clearTags(['livemachines', 'tech_data']);
         
         $result = CacheService::remember(
             $cacheKey,
@@ -166,7 +166,7 @@ class SpravController extends Controller
                 $totalRecords   = $filteredResult->total ?? 0;
                 
                 return [
-                    'data' => $data,
+                    'data' = > $data,
                     'total' => $totalRecords,
                 ];
                 
