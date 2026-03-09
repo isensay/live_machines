@@ -83,10 +83,10 @@ class SpravController extends Controller
             $length
         );
         
-        $tags = ['livemachines', 'tech_data'];
+        $tags       = ['livemachines', 'tech_data'];
         $versionKey = 'dirty_tables_version';
 
-        //CacheService::clearTags(['livemachines', 'tech_data']);
+        CacheService::clearTags(['livemachines', 'tech_data']);
         
         $result = CacheService::remember(
             $cacheKey,
@@ -98,71 +98,72 @@ class SpravController extends Controller
                 
                 // Условие по группе
                 if ($groupId == 'none') {
-                    $whereGroup = "AND `dirty_param_dirty_group_id` = 0";
+                    $sqlWhereGroup = "AND `dirty_param_dirty_group_id` = 0";
                 } else {
                     $groupIdInt = (int)$groupId;
-                    $whereGroup = ($groupIdInt > 0) ? "AND `dirty_param_dirty_group_id` = ".$pdo->quote($groupIdInt) : "";
+                    $sqlWhereGroup = ($groupIdInt > 0) ? "AND `dirty_param_dirty_group_id` = ".$pdo->quote($groupIdInt) : "";
+                }
+
+                // Условие по поиску
+                $sqlWhereSearch = "";
+                if (!empty($search)) {
+                    $minFulltextLength = 3; // Минимальная длина для FULLTEXT (По умолчанию MySQL имеет параметр ft_min_word_len = 4 (для MyISAM) или innodb_ft_min_token_size = 3)
+                    
+                    // Удаляем пробелы и считаем длину первого слова
+                    $firstWord  = trim(explode(' ', $search)[0]);
+                    $wordLength = mb_strlen($firstWord);
+                    
+                    if ($wordLength >= $minFulltextLength) {
+                        $searchTerm = addcslashes($search, '+-<>()~*"');
+                        $sqlWhereSearch = "AND MATCH(`dirty_param_name_value`) AGAINST('{$searchTerm}' IN BOOLEAN MODE)";
+                    } else {
+                        $searchTerm = $pdo->quote('%' . $search . '%');
+                        $sqlWhereSearch = "AND `dirty_param_name_value` LIKE {$searchTerm}";
+                    }
+                }
+
+                // Сортировка
+                if (isset($columns[$orderColumn])) {
+                    $orderField = $columns[$orderColumn];
+                    $sqlSort    = " ORDER BY `{$orderField}` {$orderDir}";
+                } else {
+                    $sqlSort = "";
                 }
                 
                 // ===== БАЗОВЫЙ ЗАПРОС =====
                 $baseSql = "
                     SELECT
+                        SQL_CALC_FOUND_ROWS
                         `dirty_param_name_id`    as `paramNameId`,
                         `dirty_param_name_value` as `paramName`,
                         GROUP_CONCAT(DISTINCT IF(`dirty_group_name` IS NOT NULL, `dirty_group_name`, '-') SEPARATOR '<br><br>') as `groups`,
                         GROUP_CONCAT(DISTINCT `dirty_file_name`  SEPARATOR '<br>') as `files`
                     FROM `dirty_param_name`
-                        LEFT JOIN `dirty_param` ON (
-                            `dirty_param_name_id` = `dirty_param_dirty_param_name_id` 
-                            AND `dirty_param_dirty_type_id` = `dirty_param_name_dirty_type_id` 
+                        LEFT JOIN `dirty_param` ON (1
+                            AND `dirty_param_name_id`        = `dirty_param_dirty_param_name_id` 
+                            AND `dirty_param_dirty_type_id`  = `dirty_param_name_dirty_type_id` 
                             AND `dirty_param_remove_user_id` = 0
                         )
-                        LEFT JOIN `dirty_file` ON (`dirty_file_id` = `dirty_param_dirty_file_id`)
-                        LEFT JOIN `dirty_group` ON (
-                            `dirty_group_id` = `dirty_param_dirty_group_id` 
-                            AND `dirty_group_dirty_type_id` = `dirty_param_name_dirty_type_id`
+                        LEFT JOIN `dirty_file`  ON (`dirty_file_id` = `dirty_param_dirty_file_id`)
+                        LEFT JOIN `dirty_group` ON (1
+                            AND `dirty_param_dirty_group_id` = `dirty_group_id`
+                            AND `dirty_group_dirty_type_id`  = `dirty_param_name_dirty_type_id`
                         )
                     WHERE 1
                         AND `dirty_param_name_dirty_type_id` = 1
-                        AND (dirty_file_id IS NULL OR `dirty_file_remove_user_id` = 0)
-                        {$whereGroup}
+                        AND (`dirty_file_id` IS NULL OR `dirty_file_remove_user_id` = 0)
+                        {$sqlWhereGroup}
+                        {$sqlWhereSearch}
                     GROUP BY `paramNameId`
+                    {$sqlSort}
+                    LIMIT {$start}, {$length}
                 ";
                 
-                // ===== ПОДСЧЕТ ОБЩЕГО КОЛИЧЕСТВА =====
-                $countSql = "SELECT COUNT(*) as total FROM ({$baseSql}) as temp";
-                $totalResult = $dbLm->selectOne($countSql);
-                $totalRecords = $totalResult->total ?? 0;
-                
-                // ===== ПРИМЕНЯЕМ ПОИСК =====
-                $searchSql = $baseSql;
-                if (!empty($search)) {
-                    $searchTerm = $pdo->quote('%' . $search . '%');
-                    $searchSql = "
-                        SELECT * FROM ({$baseSql}) as searched 
-                        WHERE 
-                            `paramName` LIKE {$searchTerm} 
-                            OR `groups` LIKE {$searchTerm}
-                            OR `files` LIKE {$searchTerm}
-                    ";
-                    
-                    // Пересчитываем количество после поиска
-                    $countFilteredSql = "SELECT COUNT(*) as total FROM ({$searchSql}) as filtered";
-                    $filteredResult = $dbLm->selectOne($countFilteredSql);
-                    $totalRecords = $filteredResult->total ?? 0;
-                }
-                
-                // ===== ПРИМЕНЯЕМ СОРТИРОВКУ =====
-                if (isset($columns[$orderColumn])) {
-                    $orderField = $columns[$orderColumn];
-                    $searchSql .= " ORDER BY `{$orderField}` {$orderDir}";
-                }
-                
-                // ===== ПРИМЕНЯЕМ ПАГИНАЦИЮ =====
-                $searchSql .= " LIMIT {$start}, {$length}";
-                
                 // Выполняем финальный запрос
-                $data = $dbLm->select($searchSql);
+                $data = $dbLm->select($baseSql);
+
+                $filteredResult = $dbLm->selectOne("SELECT FOUND_ROWS() as `total`");
+                $totalRecords   = $filteredResult->total ?? 0;
                 
                 return [
                     'data' => $data,
