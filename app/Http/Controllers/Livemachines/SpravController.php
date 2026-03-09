@@ -166,7 +166,7 @@ class SpravController extends Controller
                 $totalRecords   = $filteredResult->total ?? 0;
                 
                 return [
-                    'data' = > $data,
+                    'data'  => $data,
                     'total' => $totalRecords,
                 ];
                 
