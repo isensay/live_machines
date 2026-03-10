@@ -8,6 +8,8 @@ use App\Http\Controllers\JsonController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\Livemachines\SpravController;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 
 // Маршруты аутентификации (доступны без авторизации)
 require __DIR__.'/auth.php';
@@ -193,6 +195,66 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('livemachines/sprav/group', [SpravController::class, 'group_list'])
         ->name('lm_group.list');
+
+
+
+
+
+
+
+
+
+    Route::get('/livemachines/reset-database', function () {
+        // Проверяем подтверждение
+        if (!request()->has('confirmed') || request()->confirmed !== 'yes') {
+            return redirect()->back()->with('error', 'Операция отменена');
+        }
+        
+        $previousUrl = url()->previous();
+        $dumpPath = storage_path('../livemachines_dump.sql');
+        
+        if (!File::exists($dumpPath)) {
+            return redirect($previousUrl)->with('error', 'Файл дампа не найден: ' . $dumpPath);
+        }
+        
+        try {
+            // Получаем соединение с БД livemachines
+            $connection = DB::connection('livemachines');
+            
+            // Отключаем проверку внешних ключей
+            $connection->statement('SET FOREIGN_KEY_CHECKS=0');
+            
+            // Получаем все таблицы из БД livemachines
+            $tables = $connection->select('SHOW TABLES');
+            
+            // Получаем имя базы данных livemachines из конфига
+            $dbName = config('database.connections.livemachines.database');
+            $key = "Tables_in_{$dbName}";
+            
+            // Удаляем все таблицы
+            foreach ($tables as $table) {
+                $tableName = $table->$key;
+                $connection->statement("DROP TABLE IF EXISTS `{$tableName}`");
+            }
+            
+            // Включаем обратно проверку ключей
+            $connection->statement('SET FOREIGN_KEY_CHECKS=1');
+            
+            // Импортируем дамп
+            $sql = File::get($dumpPath);
+            $connection->unprepared($sql);
+            
+            return redirect($previousUrl)->with('success', 'База данных livemachines успешно сброшена!');
+            
+        } catch (\Exception $e) {
+            // В случае ошибки пытаемся включить проверку ключей
+            if (isset($connection)) {
+                $connection->statement('SET FOREIGN_KEY_CHECKS=1');
+            }
+            return redirect($previousUrl)->with('error', 'Ошибка: ' . $e->getMessage());
+        }
+    });
+
 });
 
 // Fallback - для несуществующих маршрутов (показывает 404 без редиректа)

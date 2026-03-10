@@ -17,6 +17,7 @@ bootstrap/cache/
 /docker/nginx/conf.d/app.conf
 /docker/nginx/conf.d/_app.conf
 /docker/nginx/conf.d/pma-port.conf
+livemachines_dump.sql
 
 # IDE
 /.idea/
