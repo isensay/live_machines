@@ -6,51 +6,23 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Services\CacheService;
+use App\Models\Livemachines\TechParam;
 
 class SpravController extends Controller
 {
     /**
-     * Список тех.характеристик
+     * Страница с техническими характеристиками
      */
     public function tech_list()
     {
-        //echo '<pre>';
-        //echo 'PHP timezone: ' . date_default_timezone_get() . "\n";
-        //echo 'Current time: ' . date('Y-m-d H:i:s') . "\n";
-        //echo 'Server timezone: ' . exec('date +%Z') . "\n";
-        //echo '</pre>';
-        //exit;
-
-        $dbLm = DB::connection('livemachines');
-        $sql =
-        "
-        (
-            SELECT
-                'none' as `id`,
-                'Без группы' as `name`
-        )
-        UNION
-        (
-            SELECT
-                `dirty_group_id`   as `id`,
-                `dirty_group_name` as `name`
-            FROM `dirty_group`
-                LEFT JOIN `dirty_param` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_dirty_type_id` = `dirty_param_dirty_type_id` AND `dirty_param_remove_user_id` = 0)
-            WHERE 1
-                AND `dirty_group_dirty_type_id`  = 1
-                AND `dirty_group_remove_user_id` = 0
-            GROUP BY
-                `id`
-            ORDER BY
-                `name` ASC
-        )
-        ";
-        $groups = $dbLm->select($sql);
-
-        return view('livemachines/tech/list', ['groups' => $groups]);
+        $techParam = new TechParam();
+        return view('livemachines/tech/list', ['groups' => $techParam->get_groups()]);
     }
 
+    /**
+     * AJAX -> JSON
+     * Получение списка технических параметров
+     */
     public function tech_data_ajax(Request $request)
     {
         // Параметры DataTable
@@ -62,117 +34,10 @@ class SpravController extends Controller
         $orderDir    = $request->get('order')[0]['dir'] ?? 'asc';
         
         $groupId = $request->get('group_id', 'none');
-        
-        // Маппинг колонок для сортировки
-        $columns = [
-            0 => 'paramName',
-            1 => 'groups',
-            2 => 'files',
-        ];
-        
-        // КЛЮЧ КЭША
-        $cacheKey = 'tech_data_' . md5(
-            $groupId . '_' . 
-            $search . '_' . 
-            $orderColumn . '_' . 
-            $orderDir . '_' .
-            $start . '_' . 
-            $length
-        );
-        
-        $tags       = ['livemachines', 'tech_data'];
-        $versionKey = 'dirty_tables_version';
 
-        //CacheService::clearTags(['livemachines', 'tech_data']);
-        
-        //$result = CacheService::remember(
-        //    $cacheKey,
-        //    $tags,
-        //    function () use ($groupId, $search, $orderColumn, $orderDir, $start, $length, $columns) {
+        $techParam = new TechParam();
                 
-                $dbLm = DB::connection('livemachines');
-                $pdo = $dbLm->getPdo();
-                
-                // Условие по группе
-                if ($groupId == 'none') {
-                    $sqlWhereGroup = "AND `dirty_param_dirty_group_id` = 0";
-                } else {
-                    $groupIdInt = (int)$groupId;
-                    $sqlWhereGroup = ($groupIdInt > 0) ? "AND `dirty_param_dirty_group_id` = ".$pdo->quote($groupIdInt) : "";
-                }
-
-                // Условие по поиску
-                $sqlWhereSearch = "";
-                if (!empty($search)) {
-                    $minFulltextLength = 3; // Минимальная длина для FULLTEXT (По умолчанию MySQL имеет параметр ft_min_word_len = 4 (для MyISAM) или innodb_ft_min_token_size = 3)
-                    
-                    // Удаляем пробелы и считаем длину первого слова
-                    $firstWord  = trim(explode(' ', $search)[0]);
-                    $wordLength = mb_strlen($firstWord);
-                    
-                    if ($wordLength >= $minFulltextLength) {
-                        $searchTerm = addcslashes($search, '+-<>()~*"');
-                        $sqlWhereSearch = "AND MATCH(`dirty_param_name_value`) AGAINST('{$searchTerm}' IN BOOLEAN MODE)";
-                    } else {
-                        $searchTerm = $pdo->quote('%' . $search . '%');
-                        $sqlWhereSearch = "AND `dirty_param_name_value` LIKE {$searchTerm}";
-                    }
-                }
-
-                // Сортировка
-                if (isset($columns[$orderColumn])) {
-                    $orderField = $columns[$orderColumn];
-                    $sqlSort    = " ORDER BY `{$orderField}` {$orderDir}";
-                } else {
-                    $sqlSort = "";
-                }
-                
-                // ===== БАЗОВЫЙ ЗАПРОС =====
-                $baseSql = "
-                    SELECT
-                        SQL_CALC_FOUND_ROWS
-                        `dirty_param_name_id`    as `paramNameId`,
-                        `dirty_param_name_value` as `paramName`,
-                        GROUP_CONCAT(DISTINCT IF(`dirty_group_name` IS NOT NULL, `dirty_group_name`, '-') SEPARATOR '<br><br>') as `groups`,
-                        GROUP_CONCAT(DISTINCT `dirty_file_name`  SEPARATOR '<br>') as `files`
-                    FROM `dirty_param_name`
-                        LEFT JOIN `dirty_param` ON (1
-                            AND `dirty_param_name_id`        = `dirty_param_dirty_param_name_id` 
-                            AND `dirty_param_dirty_type_id`  = `dirty_param_name_dirty_type_id` 
-                            AND `dirty_param_remove_user_id` = 0
-                        )
-                        LEFT JOIN `dirty_file`  ON (`dirty_file_id` = `dirty_param_dirty_file_id`)
-                        LEFT JOIN `dirty_group` ON (1
-                            AND `dirty_param_dirty_group_id` = `dirty_group_id`
-                            AND `dirty_group_dirty_type_id`  = `dirty_param_name_dirty_type_id`
-                        )
-                    WHERE 1
-                        AND `dirty_param_name_dirty_type_id` = 1
-                        AND (`dirty_file_id` IS NULL OR `dirty_file_remove_user_id` = 0)
-                        {$sqlWhereGroup}
-                        {$sqlWhereSearch}
-                    GROUP BY `paramNameId`
-                    {$sqlSort}
-                    LIMIT {$start}, {$length}
-                ";
-                
-                // Выполняем финальный запрос
-                $data = $dbLm->select($baseSql);
-
-                $filteredResult = $dbLm->selectOne("SELECT FOUND_ROWS() as `total`");
-                $totalRecords   = $filteredResult->total ?? 0;
-                
-                //return [
-                $result = [
-                    'data'  => $data,
-                    'total' => $totalRecords,
-                ];
-                
-        //    },
-        //    $versionKey,
-        //    3600,
-        //    6
-        //);
+        $result = $techParam->get_list($groupId,  $start, $length, $search, $orderColumn, $orderDir);
         
         return response()->json([
             'draw' => $draw,
@@ -183,7 +48,7 @@ class SpravController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Удаление всех файлов с которыми связана техническая характеристика
      */
     public function tech_destroy(int $id)
     {
@@ -242,8 +107,6 @@ class SpravController extends Controller
             {
                 $dbLm->commit();
 
-                CacheService::clearTags(['livemachines', 'tech_data']);
-
                 if (request()->ajax()) {
                     return response()->json([
                         'success' => true,
@@ -295,20 +158,10 @@ class SpravController extends Controller
     public function tech_edit_data($id)
     {
         try {
-            $dbLm = DB::connection('livemachines');
-            
+            $techParam = new TechParam();
+
             // Получаем основную информацию о параметре
-            $sql = "
-                SELECT
-                    `dirty_param_name_id` as `id`,
-                    `dirty_param_name_value` as `name`,
-                    `dirty_param_name_dirty_type_id` as `type_id`
-                FROM `dirty_param_name`
-                WHERE `dirty_param_name_id` = ?
-                    AND `dirty_param_name_dirty_type_id` = 1
-            ";
-            
-            $param = $dbLm->selectOne($sql, [$id]);
+            $param = $techParam->get_info_from_id($id);
             
             if (!$param) {
                 return response()->json([
@@ -318,50 +171,15 @@ class SpravController extends Controller
             }
             
             // Получаем группы, к которым привязан параметр
-            $groupsSql = "
-                SELECT
-                    `dirty_group_id`   as `id`,
-                    `dirty_group_name` as `name`
-                FROM `dirty_param`
-                INNER JOIN `dirty_group` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_remove_date` = 0)
-                WHERE 1
-                    AND `dirty_param_dirty_param_name_id` = ?
-                    AND `dirty_param_dirty_type_id`       = 1
-                    AND `dirty_param_remove_date`         = 0
-                GROUP BY
-                    `dirty_group_id`
-                ORDER BY
-                    `name` ASC
-            ";
-            
-            $groups = $dbLm->select($groupsSql, [$id]);
+            $groups = $techParam->get_groups($id);
 
             // ЗАГЛУШКА
             if (config('app.debug')) {
                 usleep(500000);
             }
             
-            // Получаем единицы измерения и значения
-            $valuesSql = "
-                SELECT
-                   `dirty_param_unit_id`      as `unit_id`,
-                    `dirty_param_unit_value`  as `unit_name`,
-                    `dirty_param_value_id`    as `value_id`,
-                    `dirty_param_value_value` as `value`,
-                    '' as `value_text`,
-                    0  as `file_id`
-                FROM `dirty_param`
-                    INNER JOIN `dirty_param_unit`  ON (`dirty_param_unit_id`  = `dirty_param_dirty_param_unit_id`  AND `dirty_param_unit_dirty_type_id`  = `dirty_param_dirty_type_id`)
-                    LEFT  JOIN `dirty_param_value` ON (`dirty_param_value_id` = `dirty_param_dirty_param_value_id` AND `dirty_param_value_dirty_type_id` = `dirty_param_dirty_type_id`)
-                WHERE 1
-                    AND `dirty_param_dirty_param_name_id` = ?
-                    AND `dirty_param_dirty_type_id`       = 1
-                    AND `dirty_param_remove_date`         = 0
-                GROUP BY
-                    `unit_id`
-            ";
-            
-            $values = $dbLm->select($valuesSql, [$id]);
+            // Получение списка всех единиц измерения и значений для указаноого параметра
+            $values = $techParam->get_units_and_values($id);
             
             return response()->json([
                 'success' => true,
@@ -383,55 +201,18 @@ class SpravController extends Controller
     }
 
     /**
-     * Получить справочники для формы редактирования (РЫБА)
+     * Получить справочники для формы редактирования
      */
     public function tech_get_references()
     {
-        // ВРЕМЕННЫЕ СТАТИЧНЫЕ ДАННЫЕ - ЗАМЕНИТЕ ПОТОМ НА РЕАЛЬНЫЕ
-
         try {
-            $dbLm = DB::connection('livemachines');
+            $techParam = new TechParam();
 
-            $groupsSql = "
-                SELECT
-                    `dirty_group_id`   as `id`,
-                    `dirty_group_name` as `name`
-                FROM `dirty_group`
-                WHERE 1
-                    AND `dirty_group_dirty_type_id` = 1
-                    AND `dirty_group_remove_date`   = 0
-                GROUP BY
-                    `id`
-                ORDER BY
-                    `name` ASC
-            ";
-            
-            $groups = $dbLm->select($groupsSql);
+            // Получение списка всех групп технических характеристик
+            $groups = $techParam->get_groups();
 
-            $unitsSql = "
-                (
-                    SELECT
-                        0          as `id`,
-                        'Выберите' as `name`,
-                        'text'     as `type`
-                )
-                UNION
-                (
-                    SELECT
-                        `dirty_param_unit_id`    as `id`,
-                        `dirty_param_unit_value` as `name`,
-                        'text'                   as `type`
-                    FROM `dirty_param_unit`
-                    WHERE 1
-                        AND `dirty_param_unit_dirty_type_id` = 1
-                    GROUP BY
-                        `id`
-                    ORDER BY
-                        `name` ASC
-                )
-            ";
-            
-            $units = $dbLm->select($unitsSql);
+            // Получение списка всех единиц измерения
+            $units = $techParam->get_units();
 
         } catch(\Exeption $e) {
             Log::error('Error getting edit data: ' . $e->getMessage());
@@ -441,24 +222,6 @@ class SpravController extends Controller
                 'message' => 'Ошибка загрузки данных: ' . $e->getMessage()
             ], 500);
         }
-        
-        //$units = [
-        //    ['id' => 1, 'name' => 'шт', 'type' => 'integer'],
-        //    ['id' => 2, 'name' => 'мм', 'type' => 'float'],
-        //    ['id' => 3, 'name' => 'см', 'type' => 'float'],
-        //    ['id' => 4, 'name' => 'м', 'type' => 'float'],
-        //    ['id' => 5, 'name' => 'кг', 'type' => 'float'],
-        //    ['id' => 6, 'name' => 'т', 'type' => 'float'],
-        //    ['id' => 7, 'name' => 'л', 'type' => 'float'],
-        //    ['id' => 8, 'name' => 'кВт', 'type' => 'float'],
-        //    ['id' => 9, 'name' => 'л.с.', 'type' => 'float'],
-        //    ['id' => 10, 'name' => 'об/мин', 'type' => 'integer'],
-        //    ['id' => 11, 'name' => 'А', 'type' => 'float'],
-        //    ['id' => 12, 'name' => 'В', 'type' => 'float'],
-        //    ['id' => 13, 'name' => 'нет', 'type' => 'boolean'],
-        //    ['id' => 14, 'name' => 'есть/нет', 'type' => 'boolean'],
-        //    ['id' => 15, 'name' => 'текст', 'type' => 'text'],
-        //];
         
         return response()->json([
             'success' => true,
@@ -474,51 +237,55 @@ class SpravController extends Controller
      */
     public function tech_update(Request $request, $id)
     {
+        $techParam = new TechParam();
+        
         // ЗАГЛУШКА
         if (config('app.debug')) {
             usleep(500000);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Параметр успешно обновлен'
+        // Очищаем входные данные
+        $request->merge([
+            'name' => trim($request->name ?? '')
         ]);
 
         try {
-            $dbLm = DB::connection('livemachines');
-            $dbLm->beginTransaction();
-            
             // Валидация
             $request->validate([
                 'name' => 'required|string|max:255',
                 'groups' => 'array',
                 'values' => 'array'
             ]);
-            
-            // Обновляем название параметра
-            $updateSql = "
-                UPDATE `dirty_param_name`
-                SET `dirty_param_name_value` = ?
-                WHERE `dirty_param_name_id` = ?
-                    AND `dirty_param_name_dirty_type_id` = 1
-            ";
-            
-            $dbLm->update($updateSql, [$request->name, $id]);
 
-            CacheService::clearTags(['livemachines', 'tech_data']);
-            
-            // Здесь будет логика обновления групп и значений
-            // Пока просто заглушка
-            
-            $dbLm->commit();
-            
+            $paramInfo = $techParam->get_info_from_id($id);
+
+            if ($paramInfo)
+            {
+                $paramName      = preg_replace('/\s+/', ' ', $request->name);
+                $lowerParamName = mb_strtolower($paramName);
+                
+                if ($lowerParamName == mb_strtolower($paramInfo->name)) {
+                    $newParamNameId = $id; // Обновляем если например изменились регистры символов
+                } elseif ($paramInfo = $techParam->get_info_from_name($paramName)) {
+                    $newParamNameId = $paramInfo->id; // Перепривязываем к уже имеющемуся в БД
+                } else {
+                    $newParamNameId = 0; // Создаем новый параметр
+                }
+
+                $techParam->set($paramName, $id, $newParamNameId, []);
+
+                //Log::debug('ОБНОВЛЯЕМ НАЗВАНИЕ ПАРАМЕТРА');
+            }
+
+            //Log::debug(['info' => $paramInfo]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Параметр успешно обновлен'
             ]);
             
         } catch (\Exception $e) {
-            $dbLm->rollBack();
+             //$dbLm->rollBack();
             
             Log::error('Error updating param: ' . $e->getMessage());
             
