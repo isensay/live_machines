@@ -40,11 +40,11 @@ class CacheService
         $cached = Cache::tags($tags)->get($key);
         if ($cached !== null) {
             $data = self::decompress($cached);
-            Log::debug('[Cache HIT]', [
-                'key' => $key,
-                'tags' => $tags,
-                'size' => self::formatBytes(strlen($cached)),
-            ]);
+            //Log::debug('[Cache HIT]', [
+            //    'key' => $key,
+            //    'tags' => $tags,
+            //    'size' => self::formatBytes(strlen($cached)),
+            //]);
             return $data;
         }
 

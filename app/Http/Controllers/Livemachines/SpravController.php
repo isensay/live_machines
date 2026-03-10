@@ -47,11 +47,8 @@ class SpravController extends Controller
         )
         ";
         $groups = $dbLm->select($sql);
-        return view('livemachines/tech/list', [
-            'title'       => 'Список справочников - Adoxa',
-            'description' => '',
-            'groups'      => $groups,
-        ]);
+
+        return view('livemachines/tech/list', ['groups' => $groups]);
     }
 
     public function tech_data_ajax(Request $request)
@@ -88,10 +85,10 @@ class SpravController extends Controller
 
         //CacheService::clearTags(['livemachines', 'tech_data']);
         
-        $result = CacheService::remember(
-            $cacheKey,
-            $tags,
-            function () use ($groupId, $search, $orderColumn, $orderDir, $start, $length, $columns) {
+        //$result = CacheService::remember(
+        //    $cacheKey,
+        //    $tags,
+        //    function () use ($groupId, $search, $orderColumn, $orderDir, $start, $length, $columns) {
                 
                 $dbLm = DB::connection('livemachines');
                 $pdo = $dbLm->getPdo();
@@ -165,16 +162,17 @@ class SpravController extends Controller
                 $filteredResult = $dbLm->selectOne("SELECT FOUND_ROWS() as `total`");
                 $totalRecords   = $filteredResult->total ?? 0;
                 
-                return [
+                //return [
+                $result = [
                     'data'  => $data,
                     'total' => $totalRecords,
                 ];
                 
-            },
-            $versionKey,
-            3600,
-            6
-        );
+        //    },
+        //    $versionKey,
+        //    3600,
+        //    6
+        //);
         
         return response()->json([
             'draw' => $draw,
@@ -182,56 +180,6 @@ class SpravController extends Controller
             'recordsFiltered' => $result['total'],
             'data' => $result['data']
         ]);
-    }
-
-    /**
-     * Get data for AJAX
-     */
-    public function tech_data_ajax11(Request $request)
-    {
-        $dbLm = DB::connection('livemachines');
-        $pdo = $dbLm->getPdo();
-
-        if ($request->get('group_id') == 'none')
-        {
-            $whereGroup = "AND `dirty_param_dirty_group_id` = 0";
-        }
-        else
-        {
-            $groupId    = (int)$request->get('group_id');
-            $whereGroup = ($groupId > 0) ? "AND `dirty_param_dirty_group_id` = ".$pdo->quote((int)$groupId) : "";
-            //$innerGroup = ($groupId > 0) ? "INNER JOIN `dirty_param` ON (`dirty_param_name_id` = `dirty_param_dirty_param_name_id` AND `dirty_param_dirty_type_id` = `dirty_param_name_dirty_type_id` AND `dirty_param_remove_user_id` = 0 AND `dirty_param_dirty_group_id` = ".$pdo->quote((int)$groupId).")" : "";
-        }
-        
-        if (config('app.debug')) {
-            usleep(200000);
-        }
-        
-        $sql =
-        "
-        SELECT
-            `dirty_param_name_id`    as `paramNameId`,
-            `dirty_param_name_value` as `paramName`,
-            GROUP_CONCAT(DISTINCT IF(`dirty_group_name` IS NOT NULL, `dirty_group_name`, '-') SEPARATOR '<br><br>') as `groups`,
-            GROUP_CONCAT(DISTINCT `dirty_file_name`  SEPARATOR '<br>') as `files`
-
-            #COUNT(DISTINCT `dirty_file_id`) as `fileCount`
-        FROM `dirty_param_name`
-            LEFT JOIN `dirty_param` ON (`dirty_param_name_id` = `dirty_param_dirty_param_name_id` AND `dirty_param_dirty_type_id` = `dirty_param_name_dirty_type_id` AND `dirty_param_remove_user_id` = 0)
-            LEFT JOIN `dirty_file` ON (`dirty_file_id` = `dirty_param_dirty_file_id`)
-            LEFT JOIN `dirty_group` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_dirty_type_id` = `dirty_param_name_dirty_type_id`)
-        WHERE 1
-            AND `dirty_param_name_dirty_type_id` = 1
-            #AND `dirty_param_name_value` NOT REGEXP '[а-яА-Яa-zA-Z]'
-            AND (dirty_file_id IS NULL OR `dirty_file_remove_user_id` = 0)
-            {$whereGroup}
-        GROUP BY
-            `paramNameId`
-        ";
-        
-        $data = $dbLm->select($sql);
-        
-        return response()->json(['data' => $data]);
     }
 
     /**
