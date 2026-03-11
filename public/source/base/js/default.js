@@ -72,6 +72,73 @@ function createStickyHeader() {
     });
 }
 
+// Сброс базы данных "livemachines"
+function resetDatabase(event) {
+    event.preventDefault();
+    
+    // Подтверждение действия
+    if (!confirm('Вы действительно хотите отменить все изменения в базе данных?')) {
+        return false;
+    }
+    
+    console.log('Начинаем сброс БД');
+    
+    // Показываем прелоадер
+    var preloader = document.getElementById('preloader');
+    var status = document.getElementById('status');
+    
+    if (preloader && status) {
+        preloader.style.display = 'block';
+        status.style.display = 'block';
+    }
+    
+    // Выполняем AJAX запрос
+    fetch('/livemachines/reset-database?confirmed=yes', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Сетевая ошибка: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Ответ получен:', data);
+        
+        // Скрываем прелоадер
+        if (preloader && status) {
+            preloader.style.display = 'none';
+            status.style.display = 'none';
+        }
+        
+        if (data.success) {
+            // Успех - показываем сообщение и перезагружаем страницу
+            alert('✅ База данных успешно сброшена!');
+            location.reload(); // или window.location.href = data.redirect;
+        } else {
+            // Ошибка
+            alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        
+        // Скрываем прелоадер
+        if (preloader && status) {
+            preloader.style.display = 'none';
+            status.style.display = 'none';
+        }
+        
+        alert('❌ Произошла ошибка при выполнении запроса: ' + error.message);
+    });
+    
+    return false;
+}
+
 $(document).ready(function() {
     setTimeout(createStickyHeader, 100);
 });

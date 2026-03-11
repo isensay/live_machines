@@ -205,8 +205,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     Route::get('/livemachines/reset-database', function () {
+        // Проверяем, AJAX ли это запрос
+        $isAjax = request()->ajax() || request()->wantsJson();
+        
         // Проверяем подтверждение
         if (!request()->has('confirmed') || request()->confirmed !== 'yes') {
+            if ($isAjax) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Операция не подтверждена'
+                ]);
+            }
             return redirect()->back()->with('error', 'Операция отменена');
         }
         
@@ -214,6 +223,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         $dumpPath = storage_path('../livemachines_dump.sql');
         
         if (!File::exists($dumpPath)) {
+            if ($isAjax) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Файл дампа не найден: ' . $dumpPath
+                ]);
+            }
             return redirect($previousUrl)->with('error', 'Файл дампа не найден: ' . $dumpPath);
         }
         
@@ -237,12 +252,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 $connection->statement("DROP TABLE IF EXISTS `{$tableName}`");
             }
             
-            // Включаем обратно проверку ключей
-            $connection->statement('SET FOREIGN_KEY_CHECKS=1');
-            
             // Импортируем дамп
             $sql = File::get($dumpPath);
             $connection->unprepared($sql);
+            
+            // Включаем обратно проверку ключей
+            $connection->statement('SET FOREIGN_KEY_CHECKS=1');
+            
+            // Возвращаем ответ в зависимости от типа запроса
+            if ($isAjax) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'База данных livemachines успешно сброшена!',
+                    'redirect' => $previousUrl
+                ]);
+            }
             
             return redirect($previousUrl)->with('success', 'База данных livemachines успешно сброшена!');
             
@@ -251,6 +275,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             if (isset($connection)) {
                 $connection->statement('SET FOREIGN_KEY_CHECKS=1');
             }
+            
+            if ($isAjax) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ]);
+            }
+            
             return redirect($previousUrl)->with('error', 'Ошибка: ' . $e->getMessage());
         }
     });

@@ -70,7 +70,7 @@
                                 <a href="{{ route('lm_country.list') }}">Страны</a>
                             </li>
                             <li>
-                                <a href="javascript:if(confirm('Вы действительно хотите отменить все изменения в базе данных?')){location='/livemachines/reset-database/?confirmed=yes'};">Откатить БД</a>
+                                <a href="#" onclick="return resetDatabase(event)">Откатить БД</a>
                             </li>
                         </ul>
                     </div>
