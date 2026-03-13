@@ -406,39 +406,96 @@ $(document).ready(function() {
         $('#new_group_name').val('');
         $('#createGroupModal').modal('show');
     });
-    
+
     $('#saveNewGroupBtn').on('click', function() {
         const groupName = $('#new_group_name').val().trim();
         if (!groupName) {
-            return Swal.fire({ title: 'Ошибка!', text: 'Введите название группы', icon: 'error' });
+            return Swal.fire({ 
+                title: 'Ошибка!', 
+                text: 'Введите название группы', 
+                icon: 'error' 
+            });
         }
         
-        const newId = references.groups.length + 1;
-        references.groups.push({ id: newId, name: groupName });
+        // Показываем загрузку
+        const $btn = $(this);
+        const originalText = $btn.html();
+        $btn.html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
         
-        const $groupSelect = $('#edit_groups_select');
-        const currentValues = $groupSelect.val() || [];
-        
-        if ($groupSelect.data('select2')) $groupSelect.select2('destroy');
-        
-        $groupSelect.empty();
-        references.groups.forEach(group => {
-            $groupSelect.append(new Option(group.name, group.id, false, currentValues.includes(group.id)));
+        // Отправляем AJAX запрос на создание группы
+        $.ajax({
+            url: '/livemachines/sprav/tech/group/create',
+            type: 'POST',
+            data: {
+                '_token': csrfToken,
+                'name': groupName
+            },
+            success: (response) => {
+                if (response.success) {
+                    // Добавляем новую группу в справочник с реальным ID из БД
+                    references.groups.push(response.group);
+                    
+                    // Обновляем select2 для групп
+                    const $groupSelect = $('#edit_groups_select');
+                    const currentValues = $groupSelect.val() || [];
+                    
+                    if ($groupSelect.data('select2')) {
+                        $groupSelect.select2('destroy');
+                    }
+                    
+                    $groupSelect.empty();
+                    references.groups.forEach(group => {
+                        $groupSelect.append(new Option(group.name, group.id, false, currentValues.includes(group.id)));
+                    });
+                    
+                    $groupSelect.select2({
+                        dropdownParent: $('#editParamModal'),
+                        placeholder: 'Выберите группы',
+                        allowClear: true,
+                        language: 'ru',
+                        multiple: true,
+                        width: '100%',
+                        templateResult: (data) => {
+                            if (data.loading || !data.id) return data.text;
+                            return $('<span><i class="mdi mdi-folder-outline text-success me-1"></i>' + data.text + '</span>');
+                        }
+                    });
+                    
+                    // Добавляем новую группу к выбранным
+                    currentValues.push(response.group.id);
+                    $groupSelect.val(currentValues).trigger('change');
+                    
+                    // Закрываем модалку и показываем успех
+                    $('#createGroupModal').modal('hide');
+                    Swal.fire({
+                        title: 'Создано!',
+                        text: `Группа "${response.group.name}" создана и добавлена к параметру`,
+                        icon: 'success',
+                        timer: 1500
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Ошибка!',
+                        text: response.message,
+                        icon: 'error'
+                    });
+                }
+            },
+            error: (xhr) => {
+                let errorMsg = 'Ошибка при создании группы';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                Swal.fire({
+                    title: 'Ошибка!',
+                    text: errorMsg,
+                    icon: 'error'
+                });
+            },
+            complete: () => {
+                $btn.html(originalText).prop('disabled', false);
+            }
         });
-        
-        $groupSelect.select2({
-            dropdownParent: $('#editParamModal'),
-            placeholder: 'Выберите группы', 
-            allowClear: true, 
-            language: 'ru', 
-            multiple: true, 
-            width: '100%'
-        });
-        
-        $groupSelect.val(currentValues).trigger('change');
-        $('#createGroupModal').modal('hide');
-        
-        Swal.fire({ title: 'Создано!', text: `Группа "${groupName}" создана`, icon: 'success', timer: 1500 });
     });
     
     // ===== СОЗДАНИЕ ЕДИНИЦЫ ИЗМЕРЕНИЯ =====

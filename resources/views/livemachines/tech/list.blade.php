@@ -149,8 +149,8 @@
                                     </div>
                                 </div>
                                 <small class="text-muted mt-2 d-block">
-                                    <i class="mdi mdi-information-outline me-1"></i>
-                                    Можно выбрать несколько групп. Начните вводить текст для поиска.
+                                    <i class="mdi mdi-information-outline me-1 text-primary"></i>
+                                    <span class="text-primary">Можно выбрать несколько групп, НО сохранится лишь ПЕРВАЯ</span>
                                 </small>
                             </div>
                         </div>

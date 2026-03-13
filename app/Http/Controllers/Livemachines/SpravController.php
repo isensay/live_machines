@@ -249,50 +249,81 @@ class SpravController extends Controller
             'name' => trim($request->name ?? '')
         ]);
 
-        try {
-            // Валидация
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'groups' => 'array',
-                'values' => 'array'
+        // Валидация
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'groups' => 'array',
+            'values' => 'array'
+        ]);
+
+        // Наименование параметра (начало)
+        $paramInfo = $techParam->get_info_from_id($id);
+
+        $result = false;
+
+        if (!$paramInfo) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Парематр не найден'
             ]);
+        }
+            
+        $paramName      = preg_replace('/\s+/', ' ', $request->name);
+        $lowerParamName = mb_strtolower($paramName);
+        
+        if ($lowerParamName == mb_strtolower($paramInfo->name)) {
+            $newParamNameId = $id; // Обновляем если например изменились регистры символов
+        } elseif ($paramInfo = $techParam->get_info_from_name($paramName)) {
+            $newParamNameId = $paramInfo->id; // Перепривязываем к уже имеющемуся в БД
+        } else {
+            $newParamNameId = 0; // Создаем новый параметр
+        }
+        // Наименование параметра (конец)
 
-            $paramInfo = $techParam->get_info_from_id($id);
-
-            if ($paramInfo)
-            {
-                $paramName      = preg_replace('/\s+/', ' ', $request->name);
-                $lowerParamName = mb_strtolower($paramName);
-                
-                if ($lowerParamName == mb_strtolower($paramInfo->name)) {
-                    $newParamNameId = $id; // Обновляем если например изменились регистры символов
-                } elseif ($paramInfo = $techParam->get_info_from_name($paramName)) {
-                    $newParamNameId = $paramInfo->id; // Перепривязываем к уже имеющемуся в БД
-                } else {
-                    $newParamNameId = 0; // Создаем новый параметр
-                }
-
-                $techParam->set($paramName, $id, $newParamNameId, []);
-
-                //Log::debug('ОБНОВЛЯЕМ НАЗВАНИЕ ПАРАМЕТРА');
+        // Группа
+        $groups   = $request->groups ?? [];
+        $groupIds = [];
+        foreach($groups as $groupId) {
+            $groupId = (int)$groupId;
+            if ($groupId > 0 && !in_array($groupId, $groupIds) && $techParam->get_group_info_from_id($groupId)) {
+                $groupIds[] = $groupId;
             }
+        }
 
-            //Log::debug(['info' => $paramInfo]);
+        // Единицы измерения и значения
+        $values   = $request->values ?? [];
+        $valueArr = [];
+        foreach($values as $row) {
+            $unitId = (int)$row['unit_id'];
+            $value  = (string)trim(preg_replace('/\s+/', ' ', $row['value']));
+            $valueLower = mb_strtolower($value);
+            $key = $unitId . '-|||-' . $valueLower;
+            if ($valueLower <> '' && (($unitId == 0 || ($unitId > 0 && 1 > 0)) && !isset($valueArr[$key]))) {
+                $valueArr[$key] = ['unit_id' => $unitId, 'value' => $value];
+            }
+        }
 
+        Log::debug($valueArr);
+
+        //======= ЗАГЛУШКА ========
+        //return response()->json([
+        //    'success' => true,
+        //    'message' => 'Параметр успешно обновлен'
+        //]);
+
+        // Обновляем данные
+        $result = $techParam->set($paramName, $id, $newParamNameId, $groupIds, []);
+
+        if ($result === true) {
             return response()->json([
                 'success' => true,
                 'message' => 'Параметр успешно обновлен'
             ]);
-            
-        } catch (\Exception $e) {
-             //$dbLm->rollBack();
-            
-            Log::error('Error updating param: ' . $e->getMessage());
-            
+        } else {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка обновления: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Ошибка: '.$result
+            ]);
         }
     }
 
@@ -300,7 +331,62 @@ class SpravController extends Controller
 
 
 
+    /**
+     * Создание новой группы
+     */
+    public function group_create(Request $request)
+    {
+        $techParam = new TechParam();
 
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255'
+            ]);
+            
+            $name = preg_replace('/\s+/', ' ', trim($request->name));
+            $name = trim($name);
+            
+            $connection = DB::connection('livemachines');
+            
+            // Проверяем, существует ли уже такая группа
+            $exists = $techParam->get_group_info_from_name($name);
+            
+            if ($exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Группа с таким названием уже существует'
+                ]);
+            }
+            
+            // Создаем новую группу
+            $connection->insert("
+                INSERT INTO `dirty_group` 
+                SET `dirty_group_name` = ?, 
+                    `dirty_group_dirty_type_id` = 1,
+                    `dirty_group_add_user_id` = ?,
+                    `dirty_group_add_date` = UNIX_TIMESTAMP()
+            ", [$name, auth()->id()]);
+            
+            $newId = $connection->getPdo()->lastInsertId();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Группа успешно создана',
+                'group' => [
+                    'id' => $newId,
+                    'name' => $name
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error creating group: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при создании группы: ' . $e->getMessage()
+            ]);
+        }
+    }
 
 
 

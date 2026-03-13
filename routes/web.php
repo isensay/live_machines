@@ -188,6 +188,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('lm_tech.update')
         ->whereNumber('id');
 
+    Route::post('livemachines/sprav/tech/group/create', [App\Http\Controllers\Livemachines\SpravController::class, 'group_create'])
+        ->name('lm_tech.group.create');
+
 
 
 

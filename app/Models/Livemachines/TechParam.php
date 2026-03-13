@@ -257,26 +257,71 @@ class TechParam extends Model
     /**
      * Обновление данных
      */
-    public function set($name, $fromParamNameId, $toParamNameId, $units)
+    public function set($name, $fromParamNameId, $toParamNameId, $groups, $units)
     {
-        $this->db->beginTransaction();
+        try {
+            $this->db->beginTransaction();
 
-        // Перепривязываем все записи в таблице "dirty_param" к новому пармметру
-        if ($fromParamNameId == $toParamNameId) {
-            $this->db->update("UPDATE `dirty_param_name` SET `dirty_param_name_value` = ? WHERE `dirty_param_name_id` = ? AND `dirty_param_name_dirty_type_id` = 1 LIMIT 1", [(string)$name, (int)$fromParamNameId]);
-        }
-        elseif ($toParamNameId > 0) {}
-        else {
-            $this->db->update("INSERT INTO `dirty_param_name` SET `dirty_param_name_value` = ?, `dirty_param_name_dirty_type_id` = 1", [(string)$name]);
-            $toParamNameId = $this->pdo->lastInsertId();
-        }
+            // Наименование параметра
+            if ($fromParamNameId == $toParamNameId) {
+                $this->db->update("UPDATE `dirty_param_name` SET `dirty_param_name_value` = ? WHERE `dirty_param_name_id` = ? AND `dirty_param_name_dirty_type_id` = 1 LIMIT 1", [(string)$name, (int)$fromParamNameId]);
+            }
+            elseif ($toParamNameId > 0) {}
+            else {
+                $this->db->update("INSERT INTO `dirty_param_name` SET `dirty_param_name_value` = ?, `dirty_param_name_dirty_type_id` = 1", [(string)$name]);
+                $toParamNameId = $this->pdo->lastInsertId();
+            }
 
-        if ($toParamNameId > 0 && $fromParamNameId <> $toParamNameId) {
-            $this->db->update("UPDATE `dirty_param` SET `dirty_param_dirty_param_name_id` = ? WHERE `dirty_param_dirty_param_name_id` = ? AND `dirty_param_dirty_type_id` = 1", [(int)$toParamNameId, (int)$fromParamNameId]);
-        }
+            if ($toParamNameId > 0 && $fromParamNameId <> $toParamNameId) {
+                $this->db->update("UPDATE `dirty_param` SET `dirty_param_dirty_param_name_id` = ? WHERE `dirty_param_dirty_param_name_id` = ? AND `dirty_param_dirty_type_id` = 1", [(int)$toParamNameId, (int)$fromParamNameId]);
+            }
 
-        //$paramNameId = $this->pdo->lastInsertId();
-        $this->db->commit();
-        //$dbLm->rollBack();
+            // Привязка к группе
+            if (count($groups) > 0) { // Привязываем к группам
+                foreach($groups as $groupId) {
+                    $this->db->update("UPDATE `dirty_param` SET `dirty_param_dirty_group_id` = ? WHERE `dirty_param_dirty_param_name_id` = ? AND `dirty_param_dirty_type_id` = 1", [(int)$groupId, (int)$toParamNameId]);
+                }
+            } else { // Отвязываем от всех групп
+                $this->db->update("UPDATE `dirty_param` SET `dirty_param_dirty_group_id` = 0 WHERE `dirty_param_dirty_param_name_id` = ? AND `dirty_param_dirty_type_id` = 1", [(int)$toParamNameId]);
+            }
+
+            $this->db->commit();
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error updating param: ' . $e->getMessage());
+            $dbLm->rollBack();
+            return $e->getMessage();
+        }
+    }
+
+    /**
+     * Получение информации о группе по ID
+     */
+    public function get_group_info_from_id($groupId) {
+        $sql = "
+            SELECT *
+            FROM `dirty_group` 
+            WHERE 1
+                AND `dirty_group_id`             = ? 
+                AND `dirty_group_dirty_type_id`  = 1 
+                AND `dirty_group_remove_user_id` = 0
+        ";
+        return $this->db->selectOne($sql, [(string)$groupId]);
+    }
+
+    /**
+     * Получение информации о группе по наименованию
+     */
+    public function get_group_info_from_name($groupName) {
+        $sql = "
+            SELECT *
+            FROM `dirty_group` 
+            WHERE 1
+                AND `dirty_group_name`           = ? 
+                AND `dirty_group_dirty_type_id`  = 1 
+                AND `dirty_group_remove_user_id` = 0
+        ";
+        return $this->db->selectOne($sql, [(string)$groupName]);
     }
 }
