@@ -201,10 +201,6 @@
                                         </tfoot>
                                     </table>
                                 </div>
-                                <small class="text-muted">
-                                    <i class="mdi mdi-lightbulb-on-outline me-1"></i>
-                                    Заполните единицу измерения, значение и выберите файл
-                                </small>
                             </div>
                         </div>
                     </form>
@@ -259,8 +255,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Отмена</button>
                     <button type="button" class="btn btn-success" id="saveNewGroupBtn">Создать</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Отмена</button>
                 </div>
             </div>
         </div>

@@ -13,6 +13,7 @@
                 <div id="status">
                     <div class="spinner">Loading...</div>
                 </div>
+                <div class="info"></div>
             </div>
             <!-- End Preloader-->
 

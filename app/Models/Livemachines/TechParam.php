@@ -53,7 +53,7 @@ class TechParam extends Model
 
         if ($paramId > 0) return $this->db->select($baseSql);
 
-        return $this->db->select("(SELECT 'none' as `id`, 'Без группы' as `name`) UNION ({$baseSql})");
+        return $this->db->select("(SELECT 'none' as `id`, '- Без группы -' as `name`) UNION (SELECT 'groupandno' as `id`, '- С группой и без -' as `name`) UNION ({$baseSql})");
     }
 
     /**
@@ -117,15 +117,23 @@ class TechParam extends Model
         ];
         
         // Условие по группе
+        $sqlWhereGroup = "";
+        $sqlHaving     = "";
         if ($groupId == 'none') {
             $sqlWhereGroup = "AND `dirty_param_dirty_group_id` = 0";
+        } elseif ($groupId == 'check') {
+            $sqlWhereGroup = "AND `dirty_param_checked` = 1";
+        } elseif ($groupId == 'nocheck') {
+            $sqlWhereGroup = "AND `dirty_param_checked` = 0";
+        } elseif ($groupId == 'groupandno') {
+            $sqlHaving = "HAVING `groupMinId` = 0 AND `groupMaxId` > 0";
         } else {
             $groupIdInt = (int)$groupId;
             $sqlWhereGroup = ($groupIdInt > 0) ? "AND `dirty_param_dirty_group_id` = ".$this->pdo->quote((int)$groupIdInt) : "";
         }
 
         // Условие по поиску
-        $sqlWhereSearch = "";
+        $sqlWhereSearch  = "";
         if (!empty($search)) {
             $minFulltextLength = 3; // Минимальная длина для FULLTEXT (По умолчанию MySQL имеет параметр ft_min_word_len = 4 (для MyISAM) или innodb_ft_min_token_size = 3)
             
@@ -163,7 +171,9 @@ class TechParam extends Model
                 `dirty_param_name_id`    as `paramNameId`,
                 `dirty_param_name_value` as `paramName`,
                 GROUP_CONCAT(DISTINCT IF(`dirty_group_name` IS NOT NULL, `dirty_group_name`, '-') SEPARATOR '<br><br>') as `groups`,
-                GROUP_CONCAT(DISTINCT `dirty_file_name`  SEPARATOR '<br>') as `files`
+                GROUP_CONCAT(DISTINCT `dirty_file_name`  SEPARATOR '<br>') as `files`,
+                MIN(`dirty_param_dirty_group_id`) as `groupMinId`,
+                MAX(`dirty_param_dirty_group_id`) as `groupMaxId`
             FROM `dirty_param_name`
                 LEFT JOIN `dirty_param` ON (1
                     AND `dirty_param_name_id`        = `dirty_param_dirty_param_name_id` 
@@ -180,6 +190,7 @@ class TechParam extends Model
                 {$sqlWhereGroup}
                 {$sqlWhereSearch}
             GROUP BY `paramNameId`
+            {$sqlHaving}
             {$sqlSort}
             LIMIT {$start}, {$length}
         ";

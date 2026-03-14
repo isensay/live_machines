@@ -170,6 +170,8 @@ function resetDatabase(event) {
         preloader.style.display = 'block';
         status.style.display = 'block';
     }
+
+    $('#preloader .info').text('Восстановление базы данных');
     
     // Выполняем AJAX запрос
     fetch('/livemachines/reset-database?confirmed=yes', {
@@ -189,15 +191,17 @@ function resetDatabase(event) {
         console.log('Ответ получен:', data);
         
         // Скрываем прелоадер
-        if (preloader && status) {
-            preloader.style.display = 'none';
-            status.style.display = 'none';
-        }
+        //if (preloader && status) {
+            //preloader.style.display = 'none';
+            //status.style.display = 'none';
+        //}
         
         if (data.success) {
             // Успех - показываем сообщение и перезагружаем страницу
-            alert('✅ База данных успешно сброшена!');
-            location.reload(); // или window.location.href = data.redirect;
+            $('#preloader .info').text('✅ База данных успешно восстановлена!');
+            setTimeout(function(){
+                location.reload(); // или window.location.href = data.redirect;
+            }, 1000);
         } else {
             // Ошибка
             alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
