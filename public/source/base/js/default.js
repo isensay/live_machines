@@ -201,7 +201,7 @@ function resetDatabase(event) {
             $('#preloader .info').text('✅ База данных успешно восстановлена!');
             setTimeout(function(){
                 location.reload(); // или window.location.href = data.redirect;
-            }, 1000);
+            }, 2000);
         } else {
             // Ошибка
             alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
