@@ -16,7 +16,10 @@ class SpravController extends Controller
     public function tech_list()
     {
         $techParam = new TechParam();
-        return view('livemachines/tech/list', ['groups' => $techParam->get_groups()]);
+        return view('livemachines/tech/list', [
+            'groups' => $techParam->get_groups(),
+            'files' => $techParam->get_files()
+        ]);
     }
 
     /**
@@ -84,8 +87,6 @@ class SpravController extends Controller
 
             $fileIds = isset($record->fileIds) ? $record->fileIds : "";
 
-            //Log::info('Delete method called', ['id' => $id, 'method' => request()->method(), 'user_id' => auth()->id(), 'record' => $record, 'fileIds' => $fileIds]);
-
             if ($fileIds == "")
             {
                 if (request()->ajax()) {
@@ -149,9 +150,6 @@ class SpravController extends Controller
         }
     }
 
-
-    // ---------------------
-
     /**
      * Получить данные для редактирования
      */
@@ -170,23 +168,30 @@ class SpravController extends Controller
                 ], 404);
             }
             
-            // Получаем группы, к которым привязан параметр
-            $groups = $techParam->get_groups($id);
-
-            // ЗАГЛУШКА
-            if (config('app.debug')) {
-                usleep(500000);
-            }
+            // Получаем привязки к группам с информацией о файлах
+            $groupLinks = $techParam->get_param_group_links($id);
             
-            // Получение списка всех единиц измерения и значений для указаноого параметра
+            // Получаем дополнительную информацию о параметре (additional)
+            $additional = $this->get_param_additional($id);
+
+            // Получаем дополнительную информацию о параметре (checked)
+            $checked = $this->get_param_checked($id);
+
+            // Получаем все значения с привязкой к файлам
             $values = $techParam->get_units_and_values($id);
+            
+            // Получаем список всех файлов для параметра
+            $paramFiles = $techParam->get_param_files($id);
             
             return response()->json([
                 'success' => true,
                 'data' => [
                     'param' => $param,
-                    'groups' => $groups,
-                    'values' => $values
+                    'group_links' => $groupLinks,
+                    'values' => $values,
+                    'param_files' => $paramFiles,
+                    'additional' => $additional,
+                    'checked' => $checked,
                 ]
             ]);
             
@@ -198,6 +203,48 @@ class SpravController extends Controller
                 'message' => 'Ошибка загрузки данных: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Получить значение additional для параметра
+     */
+    private function get_param_additional($paramId)
+    {
+        $dbLm = DB::connection('livemachines');
+        
+        $sql = "
+            SELECT MAX(`dirty_param_additional`) as `dirty_param_additional`
+            FROM `dirty_param`
+            WHERE 1
+                AND `dirty_param_dirty_param_name_id` = ?
+                AND `dirty_param_dirty_type_id` = 1
+                AND `dirty_param_remove_user_id` = 0
+        ";
+        
+        $result = $dbLm->selectOne($sql, [$paramId]);
+        
+        return $result ? $result->dirty_param_additional : 0;
+    }
+
+    /**
+     * Получить значение checked для параметра
+     */
+    private function get_param_checked($paramId)
+    {
+        $dbLm = DB::connection('livemachines');
+        
+        $sql = "
+            SELECT MAX(`dirty_param_checked`) as `dirty_param_checked`
+            FROM `dirty_param`
+            WHERE 1
+                AND `dirty_param_dirty_param_name_id` = ?
+                AND `dirty_param_dirty_type_id` = 1
+                AND `dirty_param_remove_user_id` = 0
+        ";
+        
+        $result = $dbLm->selectOne($sql, [$paramId]);
+        
+        return $result ? $result->dirty_param_checked : 0;
     }
 
     /**
@@ -213,9 +260,12 @@ class SpravController extends Controller
 
             // Получение списка всех единиц измерения
             $units = $techParam->get_units();
+            
+            // Получение списка всех файлов
+            $files = $techParam->get_files();
 
-        } catch(\Exeption $e) {
-            Log::error('Error getting edit data: ' . $e->getMessage());
+        } catch(\Exception $e) {
+            Log::error('Error getting references: ' . $e->getMessage());
             
             return response()->json([
                 'success' => false,
@@ -227,7 +277,8 @@ class SpravController extends Controller
             'success' => true,
             'data' => [
                 'groups' => $groups,
-                'units'  => $units
+                'units'  => $units,
+                'files'  => $files
             ]
         ]);
     }
@@ -237,9 +288,11 @@ class SpravController extends Controller
      */
     public function tech_update(Request $request, $id)
     {
+        Log::debug($request);
+
         $techParam = new TechParam();
         
-        // ЗАГЛУШКА
+        // Искусственная задержка (для режима разработки)
         if (config('app.debug')) {
             usleep(500000);
         }
@@ -252,8 +305,10 @@ class SpravController extends Controller
         // Валидация
         $request->validate([
             'name' => 'required|string|max:255',
-            'groups' => 'array',
-            'values' => 'array'
+            'group_links' => 'array',
+            'values' => 'array',
+            'additional' => 'integer|in:0,1',
+            'checked' => 'integer|in:0,1'
         ]);
 
         // Наименование параметра (начало)
@@ -264,7 +319,7 @@ class SpravController extends Controller
         if (!$paramInfo) {
             return response()->json([
                 'success' => false,
-                'message' => 'Парематр не найден'
+                'message' => 'Параметр не найден'
             ]);
         }
             
@@ -280,39 +335,65 @@ class SpravController extends Controller
         }
         // Наименование параметра (конец)
 
-        // Группа
-        $groups   = $request->groups ?? [];
-        $groupIds = [];
-        foreach($groups as $groupId) {
-            $groupId = (int)$groupId;
-            if ($groupId > 0 && !in_array($groupId, $groupIds) && $techParam->get_group_info_from_id($groupId)) {
-                $groupIds[] = $groupId;
+        // Подготовка флага "дополнительный параметр"
+        $additional = $request->additional ?? 0;
+
+        // Подготовка статуса проверки
+        $checked = $request->checked ?? 0;
+
+        // Привязки к группам
+        $groupLinks = $request->group_links ?? [];
+        $validGroupLinks = [];
+        
+        foreach($groupLinks as $link) {
+            $groupId = (int)$link['group_id'];
+            $fileId = (int)$link['file_id'];
+            
+            if ($groupId > 0 && $fileId > 0 && $techParam->get_group_info_from_id($groupId)) {
+                // Проверяем уникальность комбинации группа-файл
+                $key = $groupId . '-' . $fileId;
+                if (!isset($validGroupLinks[$key])) {
+                    $validGroupLinks[$key] = [
+                        'group_id' => $groupId,
+                        'file_id' => $fileId
+                    ];
+                }
             }
         }
 
         // Единицы измерения и значения
-        $values   = $request->values ?? [];
-        $valueArr = [];
+        $values = $request->values ?? [];
+        $validValues = [];
+        
         foreach($values as $row) {
             $unitId = (int)$row['unit_id'];
+            $fileId = (int)$row['file_id'];
             $value  = (string)trim(preg_replace('/\s+/', ' ', $row['value']));
-            $valueLower = mb_strtolower($value);
-            $key = $unitId . '-|||-' . $valueLower;
-            if ($valueLower <> '' && (($unitId == 0 || ($unitId > 0 && 1 > 0)) && !isset($valueArr[$key]))) {
-                $valueArr[$key] = ['unit_id' => $unitId, 'value' => $value];
+            
+            if (!empty($value) && $fileId > 0) {
+                $key = $unitId . '-' . $fileId . '-' . md5($value);
+                if (!isset($validValues[$key])) {
+                    $validValues[$key] = [
+                        'unit_id' => $unitId,
+                        'file_id' => $fileId,
+                        'value' => $value
+                    ];
+                }
             }
         }
 
-        Log::debug($valueArr);
-
-        //======= ЗАГЛУШКА ========
-        //return response()->json([
-        //    'success' => true,
-        //    'message' => 'Параметр успешно обновлен'
-        //]);
+        Log::debug('Updating param', [
+            'name'        => $paramName,
+            'from_id'     => $id,
+            'to_id'       => $newParamNameId,
+            'group_links' => $validGroupLinks,
+            'values'      => $validValues,
+            'additional'  => $additional,
+            'checked'     => $checked,
+        ]);
 
         // Обновляем данные
-        $result = $techParam->set($paramName, $id, $newParamNameId, $groupIds, []);
+        $result = $techParam->set($paramName, $id, $newParamNameId, $validGroupLinks, $validValues, $additional, $checked);
 
         if ($result === true) {
             return response()->json([
@@ -326,10 +407,6 @@ class SpravController extends Controller
             ]);
         }
     }
-
-    // ---------------------
-
-
 
     /**
      * Создание новой группы
@@ -387,6 +464,7 @@ class SpravController extends Controller
             ]);
         }
     }
+
 
 
 

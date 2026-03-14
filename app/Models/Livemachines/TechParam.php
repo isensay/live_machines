@@ -57,6 +57,47 @@ class TechParam extends Model
     }
 
     /**
+     * Получение списка всех файлов (источников)
+     */
+    public function get_files()
+    {
+        $sql = "
+            SELECT
+                `dirty_file_id`   as `id`,
+                `dirty_file_name` as `name`
+            FROM `dirty_file`
+            WHERE 1
+                AND `dirty_file_remove_user_id` = 0
+            ORDER BY
+                `name` ASC
+        ";
+        
+        return $this->db->select($sql);
+    }
+
+    /**
+     * Получение списка файлов для конкретного параметра
+     */
+    public function get_param_files($paramId)
+    {
+        $sql = "
+            SELECT DISTINCT
+                `dirty_file_id`   as `id`,
+                `dirty_file_name` as `name`
+            FROM `dirty_param`
+                INNER JOIN `dirty_file` ON (`dirty_file_id` = `dirty_param_dirty_file_id` AND `dirty_file_remove_user_id` = 0)
+            WHERE 1
+                AND `dirty_param_dirty_param_name_id` = ?
+                AND `dirty_param_dirty_type_id` = 1
+                AND `dirty_param_remove_user_id` = 0
+            ORDER BY
+                `dirty_file_name` ASC
+        ";
+        
+        return $this->db->select($sql, [(int)$paramId]);
+    }
+
+    /**
      * Получение списка технических характеристик
      */
     public function get_list(
@@ -176,7 +217,7 @@ class TechParam extends Model
     }
 
     /**
-     * Получение информации о технической характеристике по ID
+     * Получение информации о технической характеристике по имени
      */
     public function get_info_from_name($name) {
         // Получаем основную информацию о параметре
@@ -225,7 +266,7 @@ class TechParam extends Model
     }
 
     /**
-     * Получение списка всех единиц измерения и значений для указаноого параметра
+     * Получение списка всех единиц измерения и значений для указанного параметра
      */
     public function get_units_and_values($paramId) {
         $valuesSql = "
@@ -235,17 +276,20 @@ class TechParam extends Model
                 `dirty_param_value_id`    as `value_id`,
                 `dirty_param_value_value` as `value`,
                 '' as `value_text`,
-                0  as `file_id`
+                `dirty_param_dirty_file_id` as `file_id`,
+                `dirty_file_name` as `file_name`
             FROM `dirty_param`
                 LEFT JOIN `dirty_param_unit`  ON (`dirty_param_unit_id`  = `dirty_param_dirty_param_unit_id`  AND `dirty_param_unit_dirty_type_id`  = `dirty_param_dirty_type_id`)
                 LEFT JOIN `dirty_param_value` ON (`dirty_param_value_id` = `dirty_param_dirty_param_value_id` AND `dirty_param_value_dirty_type_id` = `dirty_param_dirty_type_id`)
+                LEFT JOIN `dirty_file` ON (`dirty_file_id` = `dirty_param_dirty_file_id` AND `dirty_file_remove_user_id` = 0)
             WHERE 1
                 AND `dirty_param_dirty_param_name_id` = ?
                 AND `dirty_param_dirty_type_id`       = 1
-                AND `dirty_param_remove_date`         = 0
+                AND `dirty_param_remove_user_id`      = 0
             GROUP BY
                 `unit_id`,
-                `value_id`
+                `value_id`,
+                `file_id`
             ORDER BY
                 `unit_name` ASC,
                 `value` ASC
@@ -255,44 +299,157 @@ class TechParam extends Model
     }
 
     /**
+     * Получение привязок параметра к группам с информацией о файлах
+     */
+    public function get_param_group_links($paramId) {
+        $sql = "
+            SELECT
+                `dirty_param_dirty_group_id` as `group_id`,
+                `dirty_group_name` as `group_name`,
+                `dirty_param_dirty_file_id` as `file_id`,
+                `dirty_file_name` as `file_name`
+            FROM `dirty_param`
+                LEFT JOIN `dirty_group` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_dirty_type_id` = `dirty_param_dirty_type_id` AND `dirty_group_remove_user_id` = 0)
+                INNER JOIN `dirty_file` ON (`dirty_file_id` = `dirty_param_dirty_file_id` AND `dirty_file_remove_user_id` = 0)
+            WHERE 1
+                AND `dirty_param_dirty_param_name_id` = ?
+                AND `dirty_param_dirty_type_id` = 1
+                AND `dirty_param_remove_user_id` = 0
+                AND `dirty_param_dirty_group_id` > 0
+            GROUP BY
+                `dirty_param_dirty_group_id`,
+                `dirty_param_dirty_file_id`
+            ORDER BY
+                `group_name` ASC,
+                `file_name` ASC
+        ";
+        
+        return $this->db->select($sql, [(int)$paramId]);
+    }
+
+    /**
      * Обновление данных
      */
-    public function set($name, $fromParamNameId, $toParamNameId, $groups, $units)
+    public function set($name, $fromParamNameId, $toParamNameId, $groupLinks, $values, $additional, $checked)
     {
         try {
             $this->db->beginTransaction();
+            $currentUserId = auth()->id();
 
-            // Наименование параметра
+            // Наименование параметра (начало)
             if ($fromParamNameId == $toParamNameId) {
                 $this->db->update("UPDATE `dirty_param_name` SET `dirty_param_name_value` = ? WHERE `dirty_param_name_id` = ? AND `dirty_param_name_dirty_type_id` = 1 LIMIT 1", [(string)$name, (int)$fromParamNameId]);
             }
-            elseif ($toParamNameId > 0) {}
+            elseif ($toParamNameId > 0) {
+                // Перепривязываем существующие записи к другому параметру
+                $this->db->update("UPDATE `dirty_param` SET `dirty_param_dirty_param_name_id` = ? WHERE `dirty_param_dirty_param_name_id` = ? AND `dirty_param_dirty_type_id` = 1 AND `dirty_param_remove_user_id` = 0", [(int)$toParamNameId, (int)$fromParamNameId]);
+                
+                // Помечаем старый параметр как удаленный
+                $this->db->update("UPDATE `dirty_param_name` SET `dirty_param_name_remove_user_id` = ?, `dirty_param_name_remove_date` = UNIX_TIMESTAMP() WHERE `dirty_param_name_id` = ? AND `dirty_param_name_dirty_type_id` = 1", [$currentUserId, (int)$fromParamNameId]);
+            }
             else {
-                $this->db->update("INSERT INTO `dirty_param_name` SET `dirty_param_name_value` = ?, `dirty_param_name_dirty_type_id` = 1", [(string)$name]);
+                $this->db->insert("INSERT INTO `dirty_param_name` SET `dirty_param_name_value` = ?, `dirty_param_name_dirty_type_id` = 1, `dirty_param_name_add_user_id` = ?, `dirty_param_name_add_date` = UNIX_TIMESTAMP()", [(string)$name, $currentUserId]);
                 $toParamNameId = $this->pdo->lastInsertId();
-            }
-
-            if ($toParamNameId > 0 && $fromParamNameId <> $toParamNameId) {
-                $this->db->update("UPDATE `dirty_param` SET `dirty_param_dirty_param_name_id` = ? WHERE `dirty_param_dirty_param_name_id` = ? AND `dirty_param_dirty_type_id` = 1", [(int)$toParamNameId, (int)$fromParamNameId]);
-            }
-
-            // Привязка к группе
-            if (count($groups) > 0) { // Привязываем к группам
-                foreach($groups as $groupId) {
-                    $this->db->update("UPDATE `dirty_param` SET `dirty_param_dirty_group_id` = ? WHERE `dirty_param_dirty_param_name_id` = ? AND `dirty_param_dirty_type_id` = 1", [(int)$groupId, (int)$toParamNameId]);
+                
+                // Перепривязываем существующие записи к новому параметру
+                if ($fromParamNameId > 0) {
+                    $this->db->update("UPDATE `dirty_param` SET `dirty_param_dirty_param_name_id` = ? WHERE `dirty_param_dirty_param_name_id` = ? AND `dirty_param_dirty_type_id` = 1 AND `dirty_param_remove_user_id` = 0", [(int)$toParamNameId, (int)$fromParamNameId]);
+                    
+                    // Помечаем старый параметр как удаленный
+                    $this->db->update("UPDATE `dirty_param_name` SET `dirty_param_name_remove_user_id` = ?, `dirty_param_name_remove_date` = UNIX_TIMESTAMP() WHERE `dirty_param_name_id` = ? AND `dirty_param_name_dirty_type_id` = 1", [$currentUserId, (int)$fromParamNameId]);
                 }
-            } else { // Отвязываем от всех групп
-                $this->db->update("UPDATE `dirty_param` SET `dirty_param_dirty_group_id` = 0 WHERE `dirty_param_dirty_param_name_id` = ? AND `dirty_param_dirty_type_id` = 1", [(int)$toParamNameId]);
+            }
+            // Наименование параметра (начало)
+
+            $this->db->commit();
+            return true;
+
+            // Помечаем все существующие записи параметра как удаленные
+            //$this->db->update("UPDATE `dirty_param` SET `dirty_param_remove_user_id` = ?, `dirty_param_remove_date` = UNIX_TIMESTAMP() WHERE `dirty_param_dirty_param_name_id` = ? AND `dirty_param_dirty_type_id` = 1 AND `dirty_param_remove_user_id` = 0", [$currentUserId, (int)$toParamNameId]);
+
+            // Добавляем новые привязки к группам
+            foreach ($groupLinks as $link) {
+                $groupId = (int)$link['group_id'];
+                $fileId = (int)$link['file_id'];
+                
+                if ($groupId > 0 && $fileId > 0) {
+                    $this->db->insert("
+                        INSERT INTO `dirty_param` 
+                        SET `dirty_param_dirty_param_name_id` = ?,
+                            `dirty_param_dirty_type_id` = 1,
+                            `dirty_param_dirty_group_id` = ?,
+                            `dirty_param_dirty_file_id` = ?,
+                            `dirty_param_additional` = ?,
+                            `dirty_param_add_user_id` = ?,
+                            `dirty_param_add_date` = UNIX_TIMESTAMP()
+                    ", [$toParamNameId, $groupId, $fileId, $additional, $currentUserId]);
+                }
+            }
+
+            // Добавляем новые значения
+            foreach ($values as $value) {
+                $unitId = (int)$value['unit_id'];
+                $fileId = (int)$value['file_id'];
+                $valueText = trim($value['value']);
+                
+                if ($fileId > 0 && !empty($valueText)) {
+                    // Проверяем существует ли такое значение
+                    $valueInfo = $this->get_value_info($valueText);
+                    $valueId = $valueInfo ? $valueInfo->id : 0;
+                    
+                    if ($valueId == 0) {
+                        // Создаем новое значение
+                        $this->db->insert("
+                            INSERT INTO `dirty_param_value` 
+                            SET `dirty_param_value_value` = ?,
+                                `dirty_param_value_dirty_type_id` = 1,
+                                `dirty_param_value_add_user_id` = ?,
+                                `dirty_param_value_add_date` = UNIX_TIMESTAMP()
+                        ", [$valueText, $currentUserId]);
+                        $valueId = $this->pdo->lastInsertId();
+                    }
+                    
+                    // Создаем запись параметра со значением
+                    $this->db->insert("
+                        INSERT INTO `dirty_param` 
+                        SET `dirty_param_dirty_param_name_id` = ?,
+                            `dirty_param_dirty_type_id` = 1,
+                            `dirty_param_dirty_param_unit_id` = ?,
+                            `dirty_param_dirty_param_value_id` = ?,
+                            `dirty_param_dirty_file_id` = ?,
+                            `dirty_param_additional` = ?,
+                            `dirty_param_add_user_id` = ?,
+                            `dirty_param_add_date` = UNIX_TIMESTAMP()
+                    ", [$toParamNameId, $unitId, $valueId, $fileId, $additional, $currentUserId]);
+                }
             }
 
             $this->db->commit();
-
             return true;
+            
         } catch (\Exception $e) {
             Log::error('Error updating param: ' . $e->getMessage());
-            $dbLm->rollBack();
+            $this->db->rollBack();
             return $e->getMessage();
         }
+    }
+
+    /**
+     * Получение информации о значении по тексту
+     */
+    public function get_value_info($value) {
+        $sql = "
+            SELECT
+                `dirty_param_value_id` as `id`
+            FROM `dirty_param_value`
+            WHERE 1
+                AND `dirty_param_value_value` = ?
+                AND `dirty_param_value_dirty_type_id` = 1
+                AND `dirty_param_value_remove_user_id` = 0
+            LIMIT 1
+        ";
+        
+        return $this->db->selectOne($sql, [(string)$value]);
     }
 
     /**
@@ -307,7 +464,7 @@ class TechParam extends Model
                 AND `dirty_group_dirty_type_id`  = 1 
                 AND `dirty_group_remove_user_id` = 0
         ";
-        return $this->db->selectOne($sql, [(string)$groupId]);
+        return $this->db->selectOne($sql, [(int)$groupId]);
     }
 
     /**

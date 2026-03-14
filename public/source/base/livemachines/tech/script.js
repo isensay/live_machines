@@ -1,8 +1,49 @@
 $(document).ready(function() {
 
+    // ===== КНОПКИ КОПИРОВАНИЯ В ТЕКСТОВЫХ ОПИСАНИЯХ =====
+    $(document).on('click', '.copy-group-icon', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Убираем фокус с кнопки закрытия
+        $('.btn-close').blur();
+        
+        // Убираем фокус с любого активного элемента
+        if (document.activeElement && document.activeElement.blur) {
+            document.activeElement.blur();
+        }
+        
+        // Небольшая задержка для гарантии снятия фокуса
+        setTimeout(function() {
+            applyToAllGroups();
+        }, 20);
+        
+        return false;
+    });
+
+    $(document).on('click', '.copy-value-icon', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Убираем фокус с кнопки закрытия
+        $('.btn-close').blur();
+        
+        // Убираем фокус с любого активного элемента
+        if (document.activeElement && document.activeElement.blur) {
+            document.activeElement.blur();
+        }
+        
+        // Небольшая задержка для гарантии снятия фокуса
+        setTimeout(function() {
+            applyToAllValues();
+        }, 20);
+        
+        return false;
+    });
+
     // ===== ИНИЦИАЛИЗАЦИЯ =====
     let table;
-    const references = { groups: [], units: [] };
+    const references = { groups: [], units: [], files: [] };
     let referencesLoaded = false;
     
     // Получаем CSRF-токен из мета-тега
@@ -30,19 +71,12 @@ $(document).ready(function() {
         table = $('#basic-datatable').DataTable({
             scrollX: true,
             processing: true,
-            serverSide: true, // Включаем server-side режим
+            serverSide: true,
             ajax: {
                 url: dataUrl,
                 type: 'GET',
                 data: function(d) {
-                    // Добавляем наш кастомный параметр group_id
                     d.group_id = $('#group-select2').val();
-                    
-                    // DataTable автоматически отправляет:
-                    // d.start - смещение (для пагинации)
-                    // d.length - количество записей на странице
-                    // d.search.value - поисковый запрос
-                    // d.order - сортировка
                 },
                 error: (xhr, error, thrown) => {
                     console.error('DataTable error:', error, thrown);
@@ -51,7 +85,7 @@ $(document).ready(function() {
             columns: [
                 { 
                     data: 'paramName',
-                    name: 'paramName' // имя колонки для сортировки
+                    name: 'paramName'
                 },
                 { 
                     data: 'groups', 
@@ -66,8 +100,8 @@ $(document).ready(function() {
                 {
                     data: 'paramNameId',
                     name: 'actions',
-                    orderable: false, // отключаем сортировку для колонки действий
-                    searchable: false, // отключаем поиск для колонки действий
+                    orderable: false,
+                    searchable: false,
                     render: (data, type, row) => `
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-danger btn-sm btn-rounded edit-btn" 
@@ -121,69 +155,22 @@ $(document).ready(function() {
             type: 'GET',
             success: (response) => {
                 if (response.success) {
-                    references.groups = response.data.groups;
-                    references.units = response.data.units;
+                    references.groups = response.data.groups || [];
+                    references.units = response.data.units || [];
+                    references.files = response.data.files || [];
                     referencesLoaded = true;
-                    
-                    // Инициализируем Select2 для групп
-                    initGroupSelect();
                 }
             },
             error: (xhr) => console.error('Error loading references:', xhr)
         });
     }
     
-    // ===== ИНИЦИАЛИЗАЦИЯ SELECT2 ДЛЯ ГРУПП =====
-    function initGroupSelect() {
-        const $groupSelect = $('#edit_groups_select');
-        
-        if ($groupSelect.data('select2')) {
-            $groupSelect.select2('destroy');
-        }
-        
-        $groupSelect.empty();
-        
-        // Добавляем все группы из справочника
-        references.groups.forEach(group => {
-            $groupSelect.append(new Option(group.name, group.id, false, false));
-        });
-        
-        $groupSelect.select2({
-            dropdownParent: $('#editParamModal'),
-            placeholder: 'Выберите группы',
-            allowClear: true,
-            language: 'ru',
-            multiple: true,
-            width: '100%',
-            templateResult: (data) => {
-                if (data.loading || !data.id) return data.text;
-                return $('<span><i class="mdi mdi-folder-outline text-success me-1"></i>' + data.text + '</span>');
-            }
-        });
-    }
-    
     // ===== ОБРАБОТЧИКИ СОБЫТИЙ =====
     $('#group-select2').on('change', function() {
-        // 1. Очищаем поисковой запрос в DataTable
         table.search('').draw();
-        
-        // 2. Очищаем визуально поле поиска
         $('div.dataTables_filter input').val('');
-        
-        // 3. Перезагружаем таблицу с первой страницы
-        table.ajax.reload(null, true); // true = сброс на страницу 1
-        
-        // Логирование для отладки
-        console.log('Group changed to:', $(this).val(), 'Reset to page 1');
+        table.ajax.reload(null, true);
     });
-    /*
-    $('#group-select2').on('change', () => {
-        // При смене фильтра перезагружаем таблицу с первой страницы
-        table.ajax.reload(null, false); // false - остаться на текущей странице? 
-        // Для фильтра лучше сбрасывать на первую страницу:
-        // table.ajax.reload(null, true);
-    });
-    */
     
     // ===== УДАЛЕНИЕ =====
     $('#basic-datatable').on('click', '.delete-btn', function(e) {
@@ -217,8 +204,7 @@ $(document).ready(function() {
                 },
                 success: (response) => {
                     if (response.success) {
-                        // Удаляем строку из таблицы без перезагрузки
-                        table.row($row).remove().draw(false); // false = остаться на текущей странице
+                        table.row($row).remove().draw(false);
                         
                         Swal.fire({ 
                             title: 'Удалено!', 
@@ -245,7 +231,6 @@ $(document).ready(function() {
         e.preventDefault();
         const id = $(this).data('id');
         
-        // Проверяем, загружены ли справочники
         if (!referencesLoaded) {
             Swal.fire({
                 title: 'Загрузка...',
@@ -254,10 +239,8 @@ $(document).ready(function() {
                 didOpen: () => Swal.showLoading()
             });
             
-            // Пробуем загрузить справочники еще раз
             loadReferences();
             
-            // Ждем загрузки и потом открываем
             const checkInterval = setInterval(() => {
                 if (referencesLoaded) {
                     clearInterval(checkInterval);
@@ -303,37 +286,21 @@ $(document).ready(function() {
         $('#edit_param_id').val(data.param.id);
         $('#edit_param_name').val(data.param.name);
         
-        // Пересоздаем Select2 для групп с правильными данными
-        const $groupSelect = $('#edit_groups_select');
+        // Устанавливаем чекбокс дополнительной опции
+        $('#edit_param_additional').prop('checked', data.additional == 1);
         
-        if ($groupSelect.data('select2')) {
-            $groupSelect.select2('destroy');
-        }
+        // Устанавливаем чекбокс статуса проверки
+        $('#edit_param_checked').prop('checked', data.checked == 1);
         
-        $groupSelect.empty();
+        // Сохраняем список файлов параметра для использования в select2 значений
+        window.currentParamFiles = data.param_files || [];
         
-        // Добавляем все группы из справочника
-        references.groups.forEach(group => {
-            $groupSelect.append(new Option(group.name, group.id, false, false));
-        });
-        
-        $groupSelect.select2({
-            dropdownParent: $('#editParamModal'),
-            placeholder: 'Выберите группы',
-            allowClear: true,
-            language: 'ru',
-            multiple: true,
-            width: '100%',
-            templateResult: (data) => {
-                if (data.loading || !data.id) return data.text;
-                return $('<span><i class="mdi mdi-folder-outline text-success me-1"></i>' + data.text + '</span>');
-            }
-        });
-        
-        // Устанавливаем выбранные группы
-        if (data.groups && data.groups.length > 0) {
-            const groupIds = data.groups.map(g => g.id);
-            $groupSelect.val(groupIds).trigger('change');
+        // Заполняем привязки к группам
+        $('#group-links-container').empty();
+        if (data.group_links && data.group_links.length > 0) {
+            data.group_links.forEach((link, index) => addGroupLinkRow(link, index));
+        } else {
+            addGroupLinkRow({}, 0);
         }
         
         // Заполняем значения
@@ -341,24 +308,150 @@ $(document).ready(function() {
         if (data.values && data.values.length > 0) {
             data.values.forEach(value => addValueRow(value));
         } else {
-            addValueRow();
+            addValueRow({});
+        }
+    }
+    
+    // ===== ДОБАВЛЕНИЕ СТРОКИ С ГРУППОЙ =====
+    function addGroupLinkRow(link = {}, index) {
+        // Определяем, является ли запись существующей (имеет file_id)
+        const isExisting = link.file_id ? true : false;
+        
+        // Для файла: если запись существующая, показываем текст, иначе select2
+        let fileFieldHtml = '';
+        if (isExisting) {
+            fileFieldHtml = `
+                <div class="form-control-plaintext file-name-display">
+                    ${link.file_name ? '<i class="mdi mdi-file-outline text-info me-1"></i>' + link.file_name : '—'}
+                </div>
+                <input type="hidden" class="file-id-input" name="group_links[][file_id]" value="${link.file_id || ''}">
+            `;
+        } else {
+            fileFieldHtml = `
+                <select class="form-control group-file-select" style="width: 100%;" name="group_links[][file_id]">
+                    <option value="0">Без файла</option>
+                </select>
+            `;
+        }
+        
+        const rowHtml = `
+        <div class="row mb-2 group-link-row align-items-center" data-row-index="${index}" data-existing="${isExisting}">
+            <div class="col-md-6">
+                <select class="form-control group-select" style="width: 100%;" name="group_links[][group_id]">
+                    <option value="">Выберите группу</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                ${fileFieldHtml}
+            </div>
+            <div class="col-md-2 text-end">
+                <div class="d-flex justify-content-end gap-1">
+                    <button type="button" class="btn btn-sm btn-primary remove-group-link" title="Удалить">
+                        <i class="mdi mdi-delete"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+        
+        $('#group-links-container').append(rowHtml);
+        const $newRow = $('#group-links-container .group-link-row:last');
+        
+        // Инициализируем Select2 для группы
+        const $groupSelect = $newRow.find('.group-select');
+        references.groups.forEach(group => {
+            $groupSelect.append(new Option(group.name, group.id, false, link.group_id == group.id));
+        });
+        
+        $groupSelect.select2({
+            dropdownParent: $('#editParamModal'),
+            placeholder: 'Выберите группу',
+            language: 'ru',
+            width: '100%',
+            minimumResultsForSearch: 0,
+            templateResult: (data) => {
+                if (data.loading || !data.id) return data.text;
+                return $('<span><i class="mdi mdi-folder-outline text-success me-1"></i>' + data.text + '</span>');
+            }
+        });
+        
+        // Инициализируем Select2 для файла (только для новых строк)
+        if (!isExisting) {
+            const $fileSelect = $newRow.find('.group-file-select');
+            
+            // Добавляем все файлы из справочника (опция "Без файла" уже есть в HTML)
+            references.files.forEach(file => {
+                const selected = (link.file_id == file.id) ? 'selected' : '';
+                $fileSelect.append(`<option value="${file.id}" ${selected}>${file.name}</option>`);
+            });
+            
+            $fileSelect.select2({
+                dropdownParent: $('#editParamModal'),
+                placeholder: 'Выберите файл',
+                language: 'ru',
+                width: '100%',
+                minimumResultsForSearch: 0,
+                templateResult: (data) => {
+                    if (data.loading || !data.id) return data.text;
+                    if (data.id == '0') {
+                        return $('<span><i class="mdi mdi-file-remove-outline text-secondary me-1"></i>' + data.text + '</span>');
+                    }
+                    return $('<span><i class="mdi mdi-file-outline text-info me-1"></i>' + data.text + '</span>');
+                }
+            });
         }
     }
     
     // ===== ДОБАВЛЕНИЕ СТРОКИ ЗНАЧЕНИЯ =====
     function addValueRow(value = {}) {
+        // Определяем, является ли запись существующей (имеет value_id)
+        const isExisting = value.value_id ? true : false;
+        
+        // Сохраняем value_id в data-атрибуте для существующих записей
+        const valueIdAttr = isExisting ? `data-value-id="${value.value_id}"` : '';
+        
+        // Для файла: если запись существующая, показываем текст, иначе select2
+        let fileFieldHtml = '';
+        if (isExisting) {
+            fileFieldHtml = `
+                <div class="form-control-plaintext file-name-display" style="padding-top: 7px;">
+                    ${value.file_name ? '<i class="mdi mdi-file-outline text-info me-1"></i>' + value.file_name : '—'}
+                </div>
+                <input type="hidden" class="file-id-input" name="values[][file_id]" value="${value.file_id || ''}">
+            `;
+        } else {
+            fileFieldHtml = `
+                <select class="form-control file-select" style="width: 100%;" name="values[][file_id]">
+                    <option value="0">Без файла</option>
+                </select>
+            `;
+        }
+        
         const rowHtml = `
-            <tr class="value-row">
-                <td><select class="form-control unit-select" style="width: 100%;" name="units[]"></select></td>
-                <td><input type="text" class="form-control value-input" name="values[]" value="${value.value || ''}" placeholder="Значение"></td>
-                <td class="text-center"><button type="button" class="btn btn-sm btn-primary remove-value-row" title="Удалить"><i class="mdi mdi-delete"></i></button></td>
-            </tr>
-        `;
+        <tr class="value-row" data-existing="${isExisting}" ${valueIdAttr}>
+            <td style="width: 30%;">
+                <select class="form-control unit-select" style="width: 100%;" name="values[][unit_id]"></select>
+            </td>
+            <td style="width: 30%;">
+                <input type="text" class="form-control value-input" name="values[][value]" 
+                    value="${value.value || ''}" placeholder="Значение">
+            </td>
+            <td style="width: 30%;">
+                ${fileFieldHtml}
+            </td>
+            <td style="width: 10%;" class="text-end pe-3">
+                <button type="button" class="btn btn-sm btn-primary remove-value-row" title="Удалить">
+                    <i class="mdi mdi-delete"></i>
+                </button>
+            </td>
+        </tr>
+    `;
         
         $('#values-container').append(rowHtml);
         const $newRow = $('#values-container tr:last');
-        const $unitSelect = $newRow.find('.unit-select');
         
+        // Инициализируем Select2 для единицы измерения (для всех строк)
+        const $unitSelect = $newRow.find('.unit-select');
         references.units.forEach(unit => {
             const selected = (value.unit_id == unit.id) ? 'selected' : '';
             $unitSelect.append(`<option value="${unit.id}" data-type="${unit.type}" ${selected}>${unit.name}</option>`);
@@ -392,17 +485,293 @@ $(document).ready(function() {
             }
         });
         
+        // Инициализируем Select2 для файла (только для новых строк)
+        if (!isExisting) {
+            const $fileSelect = $newRow.find('.file-select');
+            const paramFiles = window.currentParamFiles || [];
+            
+            // Добавляем опцию "Без файла" (уже есть в HTML) и все файлы параметра
+            paramFiles.forEach(file => {
+                const selected = (value.file_id == file.id) ? 'selected' : '';
+                $fileSelect.append(`<option value="${file.id}" ${selected}>${file.name}</option>`);
+            });
+            
+            $fileSelect.select2({
+                dropdownParent: $('#editParamModal'),
+                placeholder: 'Выберите файл',
+                language: 'ru',
+                width: '100%',
+                minimumResultsForSearch: 0,
+                templateResult: (data) => {
+                    if (data.loading || !data.id) return data.text;
+                    if (data.id == '0') {
+                        return $('<span><i class="mdi mdi-file-remove-outline text-secondary me-1"></i>' + data.text + '</span>');
+                    }
+                    return $('<span><i class="mdi mdi-file-outline text-info me-1"></i>' + data.text + '</span>');
+                }
+            });
+        }
+        
         if (value.unit_id) $unitSelect.trigger('change');
     }
     
+    // ===== ПРИМЕНИТЬ КО ВСЕМ ГРУППАМ =====
+    function applyToAllGroups() {
+        const $firstRow = $('#group-links-container .group-link-row:first');
+        if ($firstRow.length === 0) return;
+        
+        const firstGroupValue = $firstRow.find('.group-select').val();
+        
+        if (!firstGroupValue) {
+            Swal.fire({
+                title: 'Внимание!',
+                text: 'В первой строке не выбрана группа',
+                icon: 'warning',
+                timer: 1500
+            });
+            return;
+        }
+        
+        let appliedCount = 0;
+        $('#group-links-container .group-link-row:not(:first)').each(function() {
+            const $row = $(this);
+            const $groupSelect = $row.find('.group-select');
+            
+            // Обновляем значение select2
+            $groupSelect.val(firstGroupValue).trigger('change');
+            appliedCount++;
+        });
+        
+        Swal.fire({
+            title: 'Готово!',
+            text: `Значения применены к ${appliedCount} группам`,
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }
+    
+    // ===== ПРИМЕНИТЬ КО ВСЕМ ЗНАЧЕНИЯМ =====
+    function applyToAllValues() {
+        const $firstRow = $('#values-container .value-row:first');
+        if ($firstRow.length === 0) return;
+        
+        const firstUnitValue = $firstRow.find('.unit-select').val();
+        const firstValueText = $firstRow.find('.value-input').val();
+        
+        if (!firstUnitValue) {
+            Swal.fire({
+                title: 'Внимание!',
+                text: 'В первой строке не выбрана единица измерения',
+                icon: 'warning',
+                timer: 1500
+            });
+            return;
+        }
+        
+        if (!firstValueText) {
+            Swal.fire({
+                title: 'Внимание!',
+                text: 'В первой строке не заполнено значение',
+                icon: 'warning',
+                timer: 1500
+            });
+            return;
+        }
+        
+        let appliedCount = 0;
+        $('#values-container .value-row:not(:first)').each(function() {
+            const $row = $(this);
+            const $unitSelect = $row.find('.unit-select');
+            const $valueInput = $row.find('.value-input');
+            
+            // Обновляем значения (единицу измерения и текст) во всех строках, кроме первой
+            $unitSelect.val(firstUnitValue).trigger('change');
+            $valueInput.val(firstValueText);
+            
+            appliedCount++;
+        });
+        
+        Swal.fire({
+            title: 'Готово!',
+            text: `Значения применены к ${appliedCount} строкам`,
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }
+    
+    // ===== ОБНОВЛЕНИЕ ВСЕХ SELECT2 ДЛЯ ГРУПП =====
+    function refreshAllGroupSelects() {
+        $('.group-select').each(function() {
+            const $this = $(this);
+            const currentVal = $this.val();
+            
+            if ($this.data('select2')) {
+                $this.select2('destroy');
+            }
+            
+            $this.empty().append('<option value="">Выберите группу</option>');
+            references.groups.forEach(group => {
+                $this.append(new Option(group.name, group.id, false, currentVal == group.id));
+            });
+            
+            $this.select2({
+                dropdownParent: $('#editParamModal'),
+                placeholder: 'Выберите группу',
+                language: 'ru',
+                width: '100%',
+                templateResult: (data) => {
+                    if (data.loading || !data.id) return data.text;
+                    return $('<span><i class="mdi mdi-folder-outline text-success me-1"></i>' + data.text + '</span>');
+                }
+            });
+        });
+    }
+    
+    // ===== ОБНОВЛЕНИЕ ВСЕХ SELECT2 ДЛЯ ФАЙЛОВ В ГРУППАХ =====
+    function refreshAllGroupFileSelects() {
+        $('.group-file-select').each(function() {
+            const $this = $(this);
+            
+            const currentVal = $this.val();
+            
+            if ($this.data('select2')) {
+                $this.select2('destroy');
+            }
+            
+            $this.empty().append('<option value="0">Без файла</option>');
+            references.files.forEach(file => {
+                $this.append(`<option value="${file.id}">${file.name}</option>`);
+            });
+            
+            $this.select2({
+                dropdownParent: $('#editParamModal'),
+                placeholder: 'Выберите файл',
+                language: 'ru',
+                width: '100%',
+                allowClear: true,
+                templateResult: (data) => {
+                    if (data.loading || !data.id) return data.text;
+                    if (data.id == '0') {
+                        return $('<span><i class="mdi mdi-file-remove-outline text-secondary me-1"></i>' + data.text + '</span>');
+                    }
+                    return $('<span><i class="mdi mdi-file-outline text-info me-1"></i>' + data.text + '</span>');
+                }
+            });
+            
+            if (currentVal) $this.val(currentVal).trigger('change');
+        });
+    }
+    
+    // ===== ОБНОВЛЕНИЕ ВСЕХ SELECT2 ДЛЯ ФАЙЛОВ В ЗНАЧЕНИЯХ =====
+    function refreshAllFileSelects() {
+        $('.file-select').each(function() {
+            const $this = $(this);
+            
+            // Пропускаем заблокированные select2
+            if ($this.prop('disabled')) {
+                return;
+            }
+            
+            const currentVal = $this.val();
+            const paramFiles = window.currentParamFiles || [];
+            
+            if ($this.data('select2')) {
+                $this.select2('destroy');
+            }
+            
+            $this.empty().append('<option value="0">Без файла</option>');
+            paramFiles.forEach(file => {
+                $this.append(`<option value="${file.id}">${file.name}</option>`);
+            });
+            
+            $this.select2({
+                dropdownParent: $('#editParamModal'),
+                placeholder: 'Выберите файл',
+                language: 'ru',
+                width: '100%',
+                allowClear: true,
+                templateResult: (data) => {
+                    if (data.loading || !data.id) return data.text;
+                    if (data.id == '0') {
+                        return $('<span><i class="mdi mdi-file-remove-outline text-secondary me-1"></i>' + data.text + '</span>');
+                    }
+                    return $('<span><i class="mdi mdi-file-outline text-info me-1"></i>' + data.text + '</span>');
+                }
+            });
+            
+            if (currentVal) $this.val(currentVal).trigger('change');
+        });
+    }
+    
+    // ===== ОБНОВЛЕНИЕ ВСЕХ SELECT2 ДЛЯ ЕДИНИЦ ИЗМЕРЕНИЯ =====
+    function refreshAllUnitSelects() {
+        $('.unit-select').each(function() {
+            const $this = $(this);
+            const currentVal = $this.val();
+            
+            if ($this.data('select2')) {
+                $this.select2('destroy');
+            }
+            
+            $this.empty();
+            references.units.forEach(unit => {
+                $this.append(`<option value="${unit.id}" data-type="${unit.type}">${unit.name}</option>`);
+            });
+            
+            $this.select2({
+                dropdownParent: $('#editParamModal'),
+                placeholder: 'Выберите единицу', 
+                language: 'ru', 
+                width: '100%', 
+                minimumResultsForSearch: 5,
+                templateResult: (data) => {
+                    if (data.loading || !data.id) return data.text;
+                    return $('<span><i class="mdi mdi-ruler text-success me-1"></i>' + data.text + '</span>');
+                }
+            });
+            
+            if (currentVal) $this.val(currentVal).trigger('change');
+        });
+    }
+    
+    // ===== СОБЫТИЯ ДЛЯ ГРУПП =====
+    $('#addGroupLinkBtn').on('click', function() {
+        const currentCount = $('#group-links-container .group-link-row').length;
+        addGroupLinkRow({}, currentCount);
+    });
+    
+    $('#group-links-container').on('click', '.remove-group-link', function() {
+        $(this).closest('.group-link-row').remove();
+    });
+    
     // ===== СОБЫТИЯ ДЛЯ ЗНАЧЕНИЙ =====
-    $('#addValueRow').on('click', () => addValueRow());
+    $('#addValueRow').on('click', function() {
+        addValueRow({});
+    });
+    
     $('#values-container').on('click', '.remove-value-row', function() {
         $(this).closest('tr').remove();
     });
     
+    // ===== КНОПКИ КОПИРОВАНИЯ В ТЕКСТОВЫХ ОПИСАНИЯХ =====
+    $(document).on('click', '.copy-group-icon', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        applyToAllGroups();
+        return false;
+    });
+    
+    $(document).on('click', '.copy-value-icon', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        applyToAllValues();
+        return false;
+    });
+    
     // ===== СОЗДАНИЕ ГРУППЫ =====
-    $('#createNewGroupBtn').on('click', () => {
+    $('#createNewGroupBtn').on('click', function() {
         $('#new_group_name').val('');
         $('#createGroupModal').modal('show');
     });
@@ -417,12 +786,10 @@ $(document).ready(function() {
             });
         }
         
-        // Показываем загрузку
         const $btn = $(this);
         const originalText = $btn.html();
         $btn.html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
         
-        // Отправляем AJAX запрос на создание группы
         $.ajax({
             url: '/livemachines/sprav/tech/group/create',
             type: 'POST',
@@ -432,44 +799,17 @@ $(document).ready(function() {
             },
             success: (response) => {
                 if (response.success) {
-                    // Добавляем новую группу в справочник с реальным ID из БД
+                    // Добавляем новую группу в справочник
                     references.groups.push(response.group);
                     
-                    // Обновляем select2 для групп
-                    const $groupSelect = $('#edit_groups_select');
-                    const currentValues = $groupSelect.val() || [];
+                    // Обновляем все select2 для групп
+                    refreshAllGroupSelects();
+                    refreshAllGroupFileSelects();
                     
-                    if ($groupSelect.data('select2')) {
-                        $groupSelect.select2('destroy');
-                    }
-                    
-                    $groupSelect.empty();
-                    references.groups.forEach(group => {
-                        $groupSelect.append(new Option(group.name, group.id, false, currentValues.includes(group.id)));
-                    });
-                    
-                    $groupSelect.select2({
-                        dropdownParent: $('#editParamModal'),
-                        placeholder: 'Выберите группы',
-                        allowClear: true,
-                        language: 'ru',
-                        multiple: true,
-                        width: '100%',
-                        templateResult: (data) => {
-                            if (data.loading || !data.id) return data.text;
-                            return $('<span><i class="mdi mdi-folder-outline text-success me-1"></i>' + data.text + '</span>');
-                        }
-                    });
-                    
-                    // Добавляем новую группу к выбранным
-                    currentValues.push(response.group.id);
-                    $groupSelect.val(currentValues).trigger('change');
-                    
-                    // Закрываем модалку и показываем успех
                     $('#createGroupModal').modal('hide');
                     Swal.fire({
                         title: 'Создано!',
-                        text: `Группа "${response.group.name}" создана и добавлена к параметру`,
+                        text: `Группа "${response.group.name}" создана и добавлена в справочник`,
                         icon: 'success',
                         timer: 1500
                     });
@@ -507,33 +847,29 @@ $(document).ready(function() {
             return Swal.fire({ title: 'Ошибка!', text: 'Введите название единицы измерения', icon: 'error' });
         }
         
-        const newId = references.units.length + 1;
-        references.units.push({ id: newId, name: unitName, type: unitType });
+        const $btn = $(this);
+        const originalText = $btn.html();
+        $btn.html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
         
-        $('.unit-select').each(function() {
-            const $this = $(this);
-            const currentVal = $this.val();
+        // Здесь должен быть AJAX запрос на создание единицы измерения
+        // Пока используем заглушку
+        setTimeout(() => {
+            const newId = references.units.length + 1;
+            references.units.push({ id: newId, name: unitName, type: unitType });
             
-            if ($this.data('select2')) $this.select2('destroy');
+            // Обновляем все select2 для единиц измерения
+            refreshAllUnitSelects();
             
-            $this.empty();
-            references.units.forEach(unit => {
-                $this.append(`<option value="${unit.id}" data-type="${unit.type}">${unit.name} (${unit.type})</option>`);
+            $('#createUnitModal').modal('hide');
+            Swal.fire({ 
+                title: 'Создано!', 
+                text: `Единица "${unitName}" создана`, 
+                icon: 'success', 
+                timer: 1500 
             });
             
-            $this.select2({
-                dropdownParent: $('#editParamModal'),
-                placeholder: 'Выберите единицу', 
-                language: 'ru', 
-                width: '100%', 
-                minimumResultsForSearch: 5
-            });
-            
-            if (currentVal) $this.val(currentVal).trigger('change');
-        });
-        
-        $('#createUnitModal').modal('hide');
-        Swal.fire({ title: 'Создано!', text: `Единица "${unitName}" создана`, icon: 'success', timer: 1500 });
+            $btn.html(originalText).prop('disabled', false);
+        }, 500);
     });
     
     // ===== СОХРАНЕНИЕ ИЗМЕНЕНИЙ =====
@@ -541,26 +877,84 @@ $(document).ready(function() {
         const formData = {
             '_token': csrfToken,
             'name': $('#edit_param_name').val(),
-            'groups': $('#edit_groups_select').val() || [],
+            'additional': $('#edit_param_additional').is(':checked') ? 1 : 0,
+            'checked': $('#edit_param_checked').is(':checked') ? 1 : 0, // Добавлено
+            'group_links': [],
             'values': []
         };
         
         if (!formData.name) {
-            return Swal.fire({ title: 'Ошибка!', text: 'Название параметра обязательно', icon: 'error' });
+            return Swal.fire({ 
+                title: 'Ошибка!', 
+                text: 'Название параметра обязательно', 
+                icon: 'error' 
+            });
         }
         
-        $('.value-row').each(function() {
+        // Собираем все привязки к группам (и существующие, и новые)
+        $('.group-link-row').each(function() {
             const $row = $(this);
-            const unitId = $row.find('.unit-select').val();
-            const value = $row.find('.value-input').val();
+            const groupId = $row.find('.group-select').val();
             
-            if (unitId || value) {
-                formData.values.push({ 
-                    unit_id: unitId, 
-                    value: value
+            // Определяем file_id в зависимости от типа строки
+            let fileId;
+            const $fileSelect = $row.find('.group-file-select');
+            if ($fileSelect.length) {
+                // Новая строка - берем из select2
+                fileId = $fileSelect.val();
+            } else {
+                // Существующая строка - берем из hidden поля
+                fileId = $row.find('.file-id-input').val();
+            }
+            
+            // Добавляем в массив только если выбрана группа
+            if (groupId) {
+                formData.group_links.push({ 
+                    group_id: groupId, 
+                    file_id: fileId || 0 // Если fileId не определен, ставим 0
                 });
             }
         });
+        
+        // Собираем ВСЕ значения (и существующие, и новые)
+        $('.value-row').each(function() {
+            const $row = $(this);
+            const isExisting = $row.data('existing') === true;
+            
+            let unitId, fileId, value;
+            
+            if (isExisting) {
+                // Для существующей записи
+                unitId = $row.find('.unit-select').val();
+                fileId = $row.find('.file-id-input').val();
+                value = $row.find('.value-input').val().trim();
+                
+                formData.values.push({
+                    unit_id: unitId || 0,
+                    file_id: fileId || 0,
+                    value: value,
+                    is_existing: true,
+                    value_id: $row.data('value-id')
+                });
+            } else {
+                // Для новой записи
+                unitId = $row.find('.unit-select').val();
+                fileId = $row.find('.file-select').val();
+                value = $row.find('.value-input').val().trim();
+                
+                // Добавляем только если заполнено значение
+                if (value) {
+                    formData.values.push({
+                        unit_id: unitId || 0,
+                        file_id: fileId || 0,
+                        value: value,
+                        is_existing: false
+                    });
+                }
+            }
+        });
+        
+        console.log('Sending data:', formData); // Для отладки
         
         const id = $('#edit_param_id').val();
         
@@ -588,8 +982,7 @@ $(document).ready(function() {
                         showConfirmButton: false
                     });
                     
-                    // Перезагружаем таблицу, чтобы увидеть изменения
-                    table.ajax.reload(null, false); // false = остаться на текущей странице
+                    table.ajax.reload(null, false);
                 } else {
                     Swal.fire({ title: 'Ошибка!', text: response.message, icon: 'error' });
                 }
