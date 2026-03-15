@@ -256,13 +256,15 @@ class SpravController extends Controller
             $techParam = new TechParam();
 
             // Получение списка всех групп технических характеристик
-            $groups = $techParam->get_groups();
+            $groups = $techParam->get_groups(0, false);
 
             // Получение списка всех единиц измерения
             $units = $techParam->get_units();
             
             // Получение списка всех файлов
             $files = $techParam->get_files();
+
+            Log::debug($files);
 
         } catch(\Exception $e) {
             Log::error('Error getting references: ' . $e->getMessage());
