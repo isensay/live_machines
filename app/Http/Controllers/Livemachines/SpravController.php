@@ -25,7 +25,6 @@ class SpravController extends Controller
     public function tech_list() {
         return view('livemachines/tech/list', [
             'groups' => $this->techParam->get_groups(),
-            'files'  => []
         ]);
     }
 
@@ -41,6 +40,7 @@ class SpravController extends Controller
         $search      = $request->get('search')['value'] ?? '';
         $orderColumn = $request->get('order')[0]['column'] ?? 0;
         $orderDir    = $request->get('order')[0]['dir'] ?? 'asc';
+
         $groupId     = $request->get('group_id', 'none');
 
         // Получаем список технических параметров
@@ -229,7 +229,7 @@ class SpravController extends Controller
      */
     public function tech_update(Request $request, $id)
     {
-        Log::debug($request);
+        //Log::debug($request);
 
         // Искусственная задержка (для режима разработки)
         if (config('app.debug')) {
@@ -321,15 +321,15 @@ class SpravController extends Controller
             }
         }
 
-        Log::debug('Updating param', [
-            'name'        => $paramName,
-            'from_id'     => $id,
-            'to_id'       => $newParamNameId,
-            'group_links' => $validGroupLinks,
-            'values'      => $validValues,
-            'additional'  => $additional,
-            'checked'     => $checked,
-        ]);
+        //Log::debug('Updating param', [
+        //    'name'        => $paramName,
+        //    'from_id'     => $id,
+        //    'to_id'       => $newParamNameId,
+        //    'group_links' => $validGroupLinks,
+        //    'values'      => $validValues,
+        //    'additional'  => $additional,
+        //    'checked'     => $checked,
+        //]);
 
         // Обновляем данные
         $result = $this->techParam->set($paramName, $id, $newParamNameId, $validGroupLinks, $validValues, $additional, $checked);
