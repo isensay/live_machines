@@ -61,9 +61,10 @@ $(document).ready(function() {
     initDataTable();
     loadReferences(); // Загружаем справочники сразу
     
-    // ===== SELECT2 ДЛЯ ФИЛЬТРА =====
+    // ===== SELECT2 ДЛЯ ФИЛЬТРОВ =====
     function initSelect2() {
         $('#group-select2').select2({ minimumInputLength: 0, language: 'ru' });
+        $('#additional-select2').select2({ minimumInputLength: 0, language: 'ru' });
     }
     
     // ===== DATATABLE В РЕЖИМЕ SERVER-SIDE =====
@@ -77,6 +78,7 @@ $(document).ready(function() {
                 type: 'GET',
                 data: function(d) {
                     d.group_id = $('#group-select2').val();
+                    d.additional = $('#additional-select2').val();
                 },
                 error: (xhr, error, thrown) => {
                     console.error('DataTable error:', error, thrown);
@@ -172,6 +174,12 @@ $(document).ready(function() {
         table.ajax.reload(null, true);
     });
     
+    $('#additional-select2').on('change', function() {
+        table.search('').draw();
+        $('div.dataTables_filter input').val('');
+        table.ajax.reload(null, true);
+    });
+    
     // ===== УДАЛЕНИЕ =====
     $('#basic-datatable').on('click', '.delete-btn', function(e) {
         e.preventDefault();
@@ -231,6 +239,8 @@ $(document).ready(function() {
         e.preventDefault();
         const id = $(this).data('id');
         
+        const additionalValue = $('#additional-select2').val();
+        
         if (!referencesLoaded) {
             Swal.fire({
                 title: 'Загрузка...',
@@ -245,16 +255,16 @@ $(document).ready(function() {
                 if (referencesLoaded) {
                     clearInterval(checkInterval);
                     Swal.close();
-                    loadEditData(id);
+                    loadEditData(id, additionalValue);
                 }
             }, 100);
         } else {
-            loadEditData(id);
+            loadEditData(id, additionalValue);
         }
     });
-    
+
     // ===== ЗАГРУЗКА ДАННЫХ ДЛЯ РЕДАКТИРОВАНИЯ =====
-    function loadEditData(id) {
+    function loadEditData(id, additionalValue) {
         Swal.fire({ 
             title: 'Загрузка...', 
             html: 'Загружаем данные параметра', 
@@ -263,7 +273,7 @@ $(document).ready(function() {
         });
         
         $.ajax({
-            url: editUrl + id,
+            url: editUrl + id + '?additional=' + additionalValue,
             type: 'GET',
             success: (response) => {
                 Swal.close();
@@ -286,16 +296,11 @@ $(document).ready(function() {
         $('#edit_param_id').val(data.param.id);
         $('#edit_param_name').val(data.param.name);
         
-        // Устанавливаем чекбокс дополнительной опции
         $('#edit_param_additional').prop('checked', data.additional == 1);
-        
-        // Устанавливаем чекбокс статуса проверки
         $('#edit_param_checked').prop('checked', data.checked == 1);
         
-        // Сохраняем список файлов параметра для использования в select2 значений
         window.currentParamFiles = data.param_files || [];
         
-        // Заполняем привязки к группам
         $('#group-links-container').empty();
         if (data.group_links && data.group_links.length > 0) {
             data.group_links.forEach((link, index) => addGroupLinkRow(link, index));
@@ -303,7 +308,6 @@ $(document).ready(function() {
             addGroupLinkRow({}, 0);
         }
         
-        // Заполняем значения
         $('#values-container').empty();
         if (data.values && data.values.length > 0) {
             data.values.forEach(value => addValueRow(value));
@@ -311,13 +315,12 @@ $(document).ready(function() {
             addValueRow({});
         }
     }
-    
+
     // ===== ДОБАВЛЕНИЕ СТРОКИ С ГРУППОЙ =====
     function addGroupLinkRow(link = {}, index) {
-        // Определяем, является ли запись существующей (имеет file_id)
         const isExisting = link.file_id ? true : false;
+        const groupIdValue = link.group_id || '0';
         
-        // Для файла: если запись существующая, показываем текст, иначе select2
         let fileFieldHtml = '';
         if (isExisting) {
             fileFieldHtml = `
@@ -325,6 +328,7 @@ $(document).ready(function() {
                     ${link.file_name ? '<i class="mdi mdi-file-outline text-info me-1"></i>' + link.file_name : '—'}
                 </div>
                 <input type="hidden" class="file-id-input" name="group_links[][file_id]" value="${link.file_id || ''}">
+                <input type="hidden" class="group-id-input" name="group_links[][group_id]" value="${groupIdValue}">
             `;
         } else {
             fileFieldHtml = `
@@ -352,12 +356,11 @@ $(document).ready(function() {
                 </div>
             </div>
         </div>
-    `;
+        `;
         
         $('#group-links-container').append(rowHtml);
         const $newRow = $('#group-links-container .group-link-row:last');
         
-        // Инициализируем Select2 для группы
         const $groupSelect = $newRow.find('.group-select');
         references.groups.forEach(group => {
             $groupSelect.append(new Option(group.name, group.id, false, link.group_id == group.id));
@@ -375,11 +378,13 @@ $(document).ready(function() {
             }
         });
         
-        // Инициализируем Select2 для файла (только для новых строк)
+        if (link.group_id && link.group_id != '0' && link.group_id != '') {
+            $groupSelect.val(link.group_id).trigger('change');
+        }
+        
         if (!isExisting) {
             const $fileSelect = $newRow.find('.group-file-select');
             
-            // Добавляем все файлы из справочника (опция "Без файла" уже есть в HTML)
             references.files.forEach(file => {
                 const selected = (link.file_id == file.id) ? 'selected' : '';
                 $fileSelect.append(`<option value="${file.id}" ${selected}>${file.name}</option>`);
@@ -401,16 +406,12 @@ $(document).ready(function() {
             });
         }
     }
-    
+
     // ===== ДОБАВЛЕНИЕ СТРОКИ ЗНАЧЕНИЯ =====
     function addValueRow(value = {}) {
-        // Определяем, является ли запись существующей (имеет value_id)
-        const isExisting = value.value_id ? true : false;
+        const isExisting = (value.value_id || value.file_id) ? true : false;
+        const valueIdAttr = value.value_id ? `data-value-id="${value.value_id}"` : '';
         
-        // Сохраняем value_id в data-атрибуте для существующих записей
-        const valueIdAttr = isExisting ? `data-value-id="${value.value_id}"` : '';
-        
-        // Для файла: если запись существующая, показываем текст, иначе select2
         let fileFieldHtml = '';
         if (isExisting) {
             fileFieldHtml = `
@@ -440,17 +441,16 @@ $(document).ready(function() {
                 ${fileFieldHtml}
             </td>
             <td style="width: 10%;" class="text-end pe-3">
-                <button type="button" class="btn btn-sm btn-primary remove-value-row" title="Удалить">
+                <button type="button" class="btn btn-sm btn-primary remove-value-row" title="Удалить" ${isExisting ? '' : ''}>
                     <i class="mdi mdi-delete"></i>
                 </button>
             </td>
         </tr>
-    `;
+        `;
         
         $('#values-container').append(rowHtml);
         const $newRow = $('#values-container tr:last');
         
-        // Инициализируем Select2 для единицы измерения (для всех строк)
         const $unitSelect = $newRow.find('.unit-select');
         references.units.forEach(unit => {
             const selected = (value.unit_id == unit.id) ? 'selected' : '';
@@ -469,6 +469,10 @@ $(document).ready(function() {
             }
         });
         
+        if (value.unit_id) {
+            $unitSelect.val(value.unit_id).trigger('change');
+        }
+        
         $unitSelect.on('change', function() {
             const type = $(this).find('option:selected').data('type');
             const $input = $(this).closest('tr').find('.value-input');
@@ -485,12 +489,10 @@ $(document).ready(function() {
             }
         });
         
-        // Инициализируем Select2 для файла (только для новых строк)
         if (!isExisting) {
             const $fileSelect = $newRow.find('.file-select');
             const paramFiles = window.currentParamFiles || [];
             
-            // Добавляем опцию "Без файла" (уже есть в HTML) и все файлы параметра
             paramFiles.forEach(file => {
                 const selected = (value.file_id == file.id) ? 'selected' : '';
                 $fileSelect.append(`<option value="${file.id}" ${selected}>${file.name}</option>`);
@@ -510,9 +512,11 @@ $(document).ready(function() {
                     return $('<span><i class="mdi mdi-file-outline text-info me-1"></i>' + data.text + '</span>');
                 }
             });
+            
+            if (value.file_id) {
+                $fileSelect.val(value.file_id).trigger('change');
+            }
         }
-        
-        if (value.unit_id) $unitSelect.trigger('change');
     }
     
     // ===== ПРИМЕНИТЬ КО ВСЕМ ГРУППАМ =====
@@ -537,7 +541,6 @@ $(document).ready(function() {
             const $row = $(this);
             const $groupSelect = $row.find('.group-select');
             
-            // Обновляем значение select2
             $groupSelect.val(firstGroupValue).trigger('change');
             appliedCount++;
         });
@@ -585,7 +588,6 @@ $(document).ready(function() {
             const $unitSelect = $row.find('.unit-select');
             const $valueInput = $row.find('.value-input');
             
-            // Обновляем значения (единицу измерения и текст) во всех строках, кроме первой
             $unitSelect.val(firstUnitValue).trigger('change');
             $valueInput.val(firstValueText);
             
@@ -633,7 +635,6 @@ $(document).ready(function() {
     function refreshAllGroupFileSelects() {
         $('.group-file-select').each(function() {
             const $this = $(this);
-            
             const currentVal = $this.val();
             
             if ($this.data('select2')) {
@@ -669,7 +670,6 @@ $(document).ready(function() {
         $('.file-select').each(function() {
             const $this = $(this);
             
-            // Пропускаем заблокированные select2
             if ($this.prop('disabled')) {
                 return;
             }
@@ -799,10 +799,8 @@ $(document).ready(function() {
             },
             success: (response) => {
                 if (response.success) {
-                    // Добавляем новую группу в справочник
                     references.groups.push(response.group);
                     
-                    // Обновляем все select2 для групп
                     refreshAllGroupSelects();
                     refreshAllGroupFileSelects();
                     
@@ -851,13 +849,10 @@ $(document).ready(function() {
         const originalText = $btn.html();
         $btn.html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
         
-        // Здесь должен быть AJAX запрос на создание единицы измерения
-        // Пока используем заглушку
         setTimeout(() => {
             const newId = references.units.length + 1;
             references.units.push({ id: newId, name: unitName, type: unitType });
             
-            // Обновляем все select2 для единиц измерения
             refreshAllUnitSelects();
             
             $('#createUnitModal').modal('hide');
@@ -871,14 +866,14 @@ $(document).ready(function() {
             $btn.html(originalText).prop('disabled', false);
         }, 500);
     });
-    
+
     // ===== СОХРАНЕНИЕ ИЗМЕНЕНИЙ =====
     $('#saveParamBtn').on('click', function() {
         const formData = {
             '_token': csrfToken,
             'name': $('#edit_param_name').val(),
             'additional': $('#edit_param_additional').is(':checked') ? 1 : 0,
-            'checked': $('#edit_param_checked').is(':checked') ? 1 : 0, // Добавлено
+            'checked': $('#edit_param_checked').is(':checked') ? 1 : 0,
             'group_links': [],
             'values': []
         };
@@ -890,31 +885,54 @@ $(document).ready(function() {
                 icon: 'error' 
             });
         }
-        
-        // Собираем все привязки к группам (и существующие, и новые)
-        $('.group-link-row').each(function() {
+
+        console.log('=== НАЧАЛО СБОРА ДАННЫХ ===');
+        console.log('Всего строк групп:', $('.group-link-row').length);
+
+        // Собираем все привязки к группам
+        $('.group-link-row').each(function(index) {
             const $row = $(this);
-            const groupId = $row.find('.group-select').val();
             
-            // Определяем file_id в зависимости от типа строки
-            let fileId;
+            let groupId, fileId;
+            
+            // Определяем group_id - ТОЛЬКО из select (актуальное значение)
+            const $groupSelect = $row.find('.group-select');
+            if ($groupSelect.length) {
+                groupId = $groupSelect.val();
+                console.log(`Строка ${index}: выбранное значение в select =`, groupId);
+                if (groupId === null || groupId === '') {
+                    groupId = '0';
+                    console.log(`Строка ${index}: группа не выбрана (null/пусто), устанавливаем 0`);
+                }
+            } else {
+                groupId = $row.find('.group-id-input').val() || '0';
+                console.log(`Строка ${index}: используем скрытое поле =`, groupId);
+            }
+            
+            // Определяем file_id
             const $fileSelect = $row.find('.group-file-select');
             if ($fileSelect.length) {
-                // Новая строка - берем из select2
                 fileId = $fileSelect.val();
+                console.log(`Строка ${index}: fileSelect.val() =`, fileId);
+                if (fileId === null) fileId = '0';
             } else {
-                // Существующая строка - берем из hidden поля
                 fileId = $row.find('.file-id-input').val();
+                console.log(`Строка ${index}: file-id-input.val() =`, fileId);
             }
             
-            // Добавляем в массив только если выбрана группа
-            if (groupId) {
+            // Добавляем в массив только если fileId определен и не равен '0'
+            if (fileId !== undefined && fileId !== '0') {
                 formData.group_links.push({ 
-                    group_id: groupId, 
-                    file_id: fileId || 0 // Если fileId не определен, ставим 0
+                    group_id: groupId,
+                    file_id: fileId
                 });
+                console.log(`Строка ${index}: ДОБАВЛЕНО →`, { group_id: groupId, file_id: fileId });
+            } else {
+                console.log(`Строка ${index}: ПРОПУЩЕНО (нет файла)`);
             }
         });
+
+        console.log('ИТОГОВЫЙ group_links:', formData.group_links);
         
         // Собираем ВСЕ значения (и существующие, и новые)
         $('.value-row').each(function() {
@@ -924,7 +942,6 @@ $(document).ready(function() {
             let unitId, fileId, value;
             
             if (isExisting) {
-                // Для существующей записи
                 unitId = $row.find('.unit-select').val();
                 fileId = $row.find('.file-id-input').val();
                 value = $row.find('.value-input').val().trim();
@@ -937,12 +954,10 @@ $(document).ready(function() {
                     value_id: $row.data('value-id')
                 });
             } else {
-                // Для новой записи
                 unitId = $row.find('.unit-select').val();
                 fileId = $row.find('.file-select').val();
                 value = $row.find('.value-input').val().trim();
                 
-                // Добавляем только если заполнено значение
                 if (value) {
                     formData.values.push({
                         unit_id: unitId || 0,
@@ -954,10 +969,8 @@ $(document).ready(function() {
             }
         });
         
-        console.log('Sending data:', formData); // Для отладки
-        
         const id = $('#edit_param_id').val();
-        
+
         Swal.fire({ 
             title: 'Сохранение...', 
             allowOutsideClick: false, 

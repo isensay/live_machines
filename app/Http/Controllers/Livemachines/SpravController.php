@@ -41,10 +41,12 @@ class SpravController extends Controller
         $orderColumn = $request->get('order')[0]['column'] ?? 0;
         $orderDir    = $request->get('order')[0]['dir'] ?? 'asc';
 
-        $groupId     = $request->get('group_id', 'none');
+        // Фильтры
+        $groupId    = $request->get('group_id', 'none');
+        $additional = $request->get('additional', 0);
 
         // Получаем список технических параметров
-        $result = $this->techParam->get_list($groupId,  $start, $length, $search, $orderColumn, $orderDir);
+        $result = $this->techParam->get_list($groupId, $additional, $start, $length, $search, $orderColumn, $orderDir);
         
         return response()->json([
             'draw' => $draw,
@@ -157,9 +159,18 @@ class SpravController extends Controller
     /**
      * Получить данные для редактирования
      */
-    public function tech_edit_data($id)
+    public function tech_edit_data($id, Request $request)
     {
         try {
+            // Валидация
+            $request->validate([
+                'id'         => 'integer',
+                'additional' => 'integer|in:0,1'
+            ]);
+
+            // Получаем значение additional из запроса
+            $additional = $request->get('additional', '0'); // По умолчанию '0'
+
             $param = $this->techParam->get_info_from_id($id); // Получаем основную информацию о параметре
             
             if (!$param) {
@@ -169,11 +180,11 @@ class SpravController extends Controller
                 ], 404);
             }
             
-            $groupLinks = $this->techParam->get_param_group_links($id); // Получаем привязки к группам с информацией о файлах
-            $additional = $this->techParam->get_param_additional($id);  // Получаем дополнительную информацию о параметре (additional)
+            $groupLinks = $this->techParam->get_param_group_links($id, $additional); // Получаем привязки к группам с информацией о файлах
+            //$additional = $this->techParam->get_param_additional($id);  // Получаем дополнительную информацию о параметре (additional)
             $checked    = $this->techParam->get_param_checked($id);     // Получаем дополнительную информацию о параметре (checked)
-            $values     = $this->techParam->get_units_and_values($id);  // Получаем все значения с привязкой к файлам
-            $paramFiles = $this->techParam->get_param_files($id);       // Получаем список всех файлов для параметра
+            $values     = $this->techParam->get_units_and_values($id, $additional);  // Получаем все значения с привязкой к файлам
+            $paramFiles = $this->techParam->get_param_files($id, $additional);       // Получаем список всех файлов для параметра
             
             return response()->json([
                 'success' => true,
@@ -229,7 +240,7 @@ class SpravController extends Controller
      */
     public function tech_update(Request $request, $id)
     {
-        //Log::debug($request);
+        Log::debug($request);
 
         // Искусственная задержка (для режима разработки)
         if (config('app.debug')) {
@@ -261,7 +272,8 @@ class SpravController extends Controller
                 'message' => 'Параметр не найден'
             ]);
         }
-            
+        
+        $paramName      = $request->name ?? '';
         $paramName      = preg_replace('/\s+/', ' ', $request->name);
         $lowerParamName = mb_strtolower($paramName);
         
@@ -282,13 +294,16 @@ class SpravController extends Controller
 
         // Привязки к группам
         $groupLinks = $request->group_links ?? [];
+
+        //Log::debug('-->>', $groupLinks);
+
         $validGroupLinks = [];
         
         foreach($groupLinks as $link) {
             $groupId = (int)$link['group_id'];
             $fileId = (int)$link['file_id'];
             
-            if ($groupId > 0 && $fileId > 0 && $this->techParam->get_group_info_from_id($groupId)) {
+            if ($fileId > 0 && ($groupId == 0 || $this->techParam->get_group_info_from_id($groupId))) {
                 // Проверяем уникальность комбинации группа-файл
                 $key = $groupId . '-' . $fileId;
                 if (!isset($validGroupLinks[$key])) {
@@ -300,6 +315,8 @@ class SpravController extends Controller
             }
         }
 
+        Log::debug('-->>', $validGroupLinks);
+
         // Единицы измерения и значения
         $values = $request->values ?? [];
         $validValues = [];
@@ -307,10 +324,13 @@ class SpravController extends Controller
         foreach($values as $row) {
             $unitId = (int)$row['unit_id'];
             $fileId = (int)$row['file_id'];
-            $value  = (string)trim(preg_replace('/\s+/', ' ', $row['value']));
             
-            if (!empty($value) && $fileId > 0) {
-                $key = $unitId . '-' . $fileId . '-' . md5($value);
+            // Проверяем, что значение не null и приводим к строке
+            $valueRaw = $row['value'] ?? '';
+            $value = (string)trim(preg_replace('/\s+/', ' ', $valueRaw));
+            
+            if ($fileId >= 0) {
+                $key = $unitId . '-' . $fileId; // . '-' . md5($value);
                 if (!isset($validValues[$key])) {
                     $validValues[$key] = [
                         'unit_id' => $unitId,
@@ -357,7 +377,8 @@ class SpravController extends Controller
                 'name' => 'required|string|max:255'
             ]);
             
-            $name = preg_replace('/\s+/', ' ', trim($request->name));
+            $name = $request->name ?? '';
+            $name = preg_replace('/\s+/', ' ', trim($name));
             $name = trim($name);
             
             $connection = DB::connection('livemachines');

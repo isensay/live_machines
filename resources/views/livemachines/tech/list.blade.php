@@ -21,7 +21,7 @@
         </div>
     </div>
 
-    <!-- Фильтр по группам -->
+    <!-- Фильтр по группам и типу параметра -->
     <div class="row mb-1">
         <div class="col-12">
             <div class="card">
@@ -32,9 +32,9 @@
                                 <i class="mdi mdi-filter-outline text-success"></i> Группа:
                             </label>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <select id="group-select2" class="form-control" data-toggle="select2" style="width: 100%;">
-                                <option value="all">- Все параметры -</option>
+                                <option value="all" selected>- Все параметры -</option>
                                 <option value="check">- Проверенные -</option>
                                 <option value="nocheck">- Непроверенные -</option>
                                 @foreach($groups as $group)
@@ -42,9 +42,22 @@
                                 @endforeach
                             </select>
                         </div>
+                        
+                        <div class="col-md-auto ms-3">
+                            <label for="type-select2" class="form-label mb-0 fw-bold">
+                                <i class="mdi mdi-filter-outline text-info"></i> Тип:
+                            </label>
+                        </div>
+                        <div class="col-md-2">
+                            <select id="additional-select2" class="form-control" data-toggle="select2" style="width: 100%;">
+                                <option value="0" selected>Основные параметры</option>
+                                <option value="1">Дополнительные параметры</option>
+                            </select>
+                        </div>
+                        
                         <div class="col-md-auto">
                             <span class="text-muted small">
-                                <i class="mdi mdi-magnify"></i> Можно искать по названию группы
+                                <i class="mdi mdi-magnify"></i> Фильтр по группе и типу
                             </span>
                         </div>
                     </div>
