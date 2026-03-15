@@ -10,15 +10,22 @@ use App\Models\Livemachines\TechParam;
 
 class SpravController extends Controller
 {
+    private $techParam = null;
+
+    private $dbConnection;
+
+    public function __construct() {
+        $this->dbConnection = DB::connection('livemachines');
+        $this->techParam    = new TechParam([], $this->dbConnection);
+    }
+
     /**
      * Страница с техническими характеристиками
      */
-    public function tech_list()
-    {
-        $techParam = new TechParam();
+    public function tech_list() {
         return view('livemachines/tech/list', [
-            'groups' => $techParam->get_groups(),
-            'files' => $techParam->get_files()
+            'groups' => $this->techParam->get_groups(),
+            'files'  => []
         ]);
     }
 
@@ -26,8 +33,7 @@ class SpravController extends Controller
      * AJAX -> JSON
      * Получение списка технических параметров
      */
-    public function tech_data_ajax(Request $request)
-    {
+    public function tech_data_ajax(Request $request) {
         // Параметры DataTable
         $draw        = $request->get('draw');
         $start       = (int)$request->get('start', 0);
@@ -35,12 +41,10 @@ class SpravController extends Controller
         $search      = $request->get('search')['value'] ?? '';
         $orderColumn = $request->get('order')[0]['column'] ?? 0;
         $orderDir    = $request->get('order')[0]['dir'] ?? 'asc';
-        
-        $groupId = $request->get('group_id', 'none');
+        $groupId     = $request->get('group_id', 'none');
 
-        $techParam = new TechParam();
-                
-        $result = $techParam->get_list($groupId,  $start, $length, $search, $orderColumn, $orderDir);
+        // Получаем список технических параметров
+        $result = $this->techParam->get_list($groupId,  $start, $length, $search, $orderColumn, $orderDir);
         
         return response()->json([
             'draw' => $draw,
@@ -156,10 +160,7 @@ class SpravController extends Controller
     public function tech_edit_data($id)
     {
         try {
-            $techParam = new TechParam();
-
-            // Получаем основную информацию о параметре
-            $param = $techParam->get_info_from_id($id);
+            $param = $this->techParam->get_info_from_id($id); // Получаем основную информацию о параметре
             
             if (!$param) {
                 return response()->json([
@@ -168,33 +169,23 @@ class SpravController extends Controller
                 ], 404);
             }
             
-            // Получаем привязки к группам с информацией о файлах
-            $groupLinks = $techParam->get_param_group_links($id);
-            
-            // Получаем дополнительную информацию о параметре (additional)
-            $additional = $this->get_param_additional($id);
-
-            // Получаем дополнительную информацию о параметре (checked)
-            $checked = $this->get_param_checked($id);
-
-            // Получаем все значения с привязкой к файлам
-            $values = $techParam->get_units_and_values($id);
-            
-            // Получаем список всех файлов для параметра
-            $paramFiles = $techParam->get_param_files($id);
+            $groupLinks = $this->techParam->get_param_group_links($id); // Получаем привязки к группам с информацией о файлах
+            $additional = $this->techParam->get_param_additional($id);  // Получаем дополнительную информацию о параметре (additional)
+            $checked    = $this->techParam->get_param_checked($id);     // Получаем дополнительную информацию о параметре (checked)
+            $values     = $this->techParam->get_units_and_values($id);  // Получаем все значения с привязкой к файлам
+            $paramFiles = $this->techParam->get_param_files($id);       // Получаем список всех файлов для параметра
             
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'param' => $param,
+                    'param'       => $param,
                     'group_links' => $groupLinks,
-                    'values' => $values,
+                    'values'      => $values,
                     'param_files' => $paramFiles,
-                    'additional' => $additional,
-                    'checked' => $checked,
+                    'additional'  => $additional,
+                    'checked'     => $checked,
                 ]
             ]);
-            
         } catch (\Exception $e) {
             Log::error('Error getting edit data: ' . $e->getMessage());
             
@@ -206,66 +197,14 @@ class SpravController extends Controller
     }
 
     /**
-     * Получить значение additional для параметра
-     */
-    private function get_param_additional($paramId)
-    {
-        $dbLm = DB::connection('livemachines');
-        
-        $sql = "
-            SELECT MAX(`dirty_param_additional`) as `dirty_param_additional`
-            FROM `dirty_param`
-            WHERE 1
-                AND `dirty_param_dirty_param_name_id` = ?
-                AND `dirty_param_dirty_type_id` = 1
-                AND `dirty_param_remove_user_id` = 0
-        ";
-        
-        $result = $dbLm->selectOne($sql, [$paramId]);
-        
-        return $result ? $result->dirty_param_additional : 0;
-    }
-
-    /**
-     * Получить значение checked для параметра
-     */
-    private function get_param_checked($paramId)
-    {
-        $dbLm = DB::connection('livemachines');
-        
-        $sql = "
-            SELECT MAX(`dirty_param_checked`) as `dirty_param_checked`
-            FROM `dirty_param`
-            WHERE 1
-                AND `dirty_param_dirty_param_name_id` = ?
-                AND `dirty_param_dirty_type_id` = 1
-                AND `dirty_param_remove_user_id` = 0
-        ";
-        
-        $result = $dbLm->selectOne($sql, [$paramId]);
-        
-        return $result ? $result->dirty_param_checked : 0;
-    }
-
-    /**
      * Получить справочники для формы редактирования
      */
     public function tech_get_references()
     {
         try {
-            $techParam = new TechParam();
-
-            // Получение списка всех групп технических характеристик
-            $groups = $techParam->get_groups(0, false);
-
-            // Получение списка всех единиц измерения
-            $units = $techParam->get_units();
-            
-            // Получение списка всех файлов
-            $files = $techParam->get_files();
-
-            Log::debug($files);
-
+            $groups = $this->techParam->get_groups(0, false); // Получение списка всех групп технических характеристик
+            $units  = $this->techParam->get_units();          // Получение списка всех единиц измерения
+            $files  = $this->techParam->get_files();          // Получение списка всех файлов
         } catch(\Exception $e) {
             Log::error('Error getting references: ' . $e->getMessage());
             
@@ -292,8 +231,6 @@ class SpravController extends Controller
     {
         Log::debug($request);
 
-        $techParam = new TechParam();
-        
         // Искусственная задержка (для режима разработки)
         if (config('app.debug')) {
             usleep(500000);
@@ -314,7 +251,7 @@ class SpravController extends Controller
         ]);
 
         // Наименование параметра (начало)
-        $paramInfo = $techParam->get_info_from_id($id);
+        $paramInfo = $this->techParam->get_info_from_id($id);
 
         $result = false;
 
@@ -330,7 +267,7 @@ class SpravController extends Controller
         
         if ($lowerParamName == mb_strtolower($paramInfo->name)) {
             $newParamNameId = $id; // Обновляем если например изменились регистры символов
-        } elseif ($paramInfo = $techParam->get_info_from_name($paramName)) {
+        } elseif ($paramInfo = $this->techParam->get_info_from_name($paramName)) {
             $newParamNameId = $paramInfo->id; // Перепривязываем к уже имеющемуся в БД
         } else {
             $newParamNameId = 0; // Создаем новый параметр
@@ -351,7 +288,7 @@ class SpravController extends Controller
             $groupId = (int)$link['group_id'];
             $fileId = (int)$link['file_id'];
             
-            if ($groupId > 0 && $fileId > 0 && $techParam->get_group_info_from_id($groupId)) {
+            if ($groupId > 0 && $fileId > 0 && $this->techParam->get_group_info_from_id($groupId)) {
                 // Проверяем уникальность комбинации группа-файл
                 $key = $groupId . '-' . $fileId;
                 if (!isset($validGroupLinks[$key])) {
@@ -395,7 +332,7 @@ class SpravController extends Controller
         ]);
 
         // Обновляем данные
-        $result = $techParam->set($paramName, $id, $newParamNameId, $validGroupLinks, $validValues, $additional, $checked);
+        $result = $this->techParam->set($paramName, $id, $newParamNameId, $validGroupLinks, $validValues, $additional, $checked);
 
         if ($result === true) {
             return response()->json([
@@ -415,8 +352,6 @@ class SpravController extends Controller
      */
     public function group_create(Request $request)
     {
-        $techParam = new TechParam();
-
         try {
             $request->validate([
                 'name' => 'required|string|max:255'
@@ -428,7 +363,7 @@ class SpravController extends Controller
             $connection = DB::connection('livemachines');
             
             // Проверяем, существует ли уже такая группа
-            $exists = $techParam->get_group_info_from_name($name);
+            $exists = $this->techParam->get_group_info_from_name($name);
             
             if ($exists) {
                 return response()->json([

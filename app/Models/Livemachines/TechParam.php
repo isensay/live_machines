@@ -11,13 +11,25 @@ class TechParam extends Model
     protected $db;
     protected $pdo;
 
+    protected static $eventFired       = false; // Чтобы в профайлере не отображалось что модель подключена несколько раз из за $this->fireModelEvent()
+    protected static $sharedConnection = null;  // Статическое свойство для хранения единого подключения
+
     /**
      * Подключение к БД
      */
-    public function __construct()
+    public function __construct(array $attributes = [], $connection = null)
     {
-        $this->db  = DB::connection('livemachines');
+        parent::__construct($attributes);
+        
+        // Используем переданное соединение или создаем новое
+        $this->db = $connection ?? DB::connection('livemachines');
         $this->pdo = $this->db->getPdo();
+        
+        // Регистрируем в профайлере (только 1 раз)
+        if (config('app.debug') && !self::$eventFired) {
+            $this->fireModelEvent('retrieved', false);
+            self::$eventFired = true;
+        }
     }
 
     /**
@@ -57,11 +69,6 @@ class TechParam extends Model
             ) 
         ";
 
-        //if ($paramId > 0)
-        //{
-        //    $baseSql = "(SELECT 0 as `id`, '- Без группы -' as `name` FROM `dirty_param` WHERE `dirty_param_dirty_param_name_id` = ? AND `dirty_param_dirty_group_id` = 0 AND `dirty_param_dirty_type_id` = 1 AND `dirty_param_remove_user_id` = 0 LIMIT 1) UNION ({$baseSql})";
-        //}
-
         return $this->db->select($baseSql);
     }
 
@@ -80,7 +87,6 @@ class TechParam extends Model
             ORDER BY
                 `name` ASC
         ";
-        
         return $this->db->select($sql);
     }
 
@@ -102,7 +108,6 @@ class TechParam extends Model
             ORDER BY
                 `dirty_file_name` ASC
         ";
-        
         return $this->db->select($sql, [(int)$paramId]);
     }
 
@@ -232,7 +237,6 @@ class TechParam extends Model
                 AND `dirty_param_name_id`            = ?
                 AND `dirty_param_name_dirty_type_id` = 1
         ";
-        
         return $this->db->selectOne($sql, [(int)$paramId]);
     }
 
@@ -251,7 +255,6 @@ class TechParam extends Model
                 AND `dirty_param_name_value`         = ?
                 AND `dirty_param_name_dirty_type_id` = 1
         ";
-        
         return $this->db->selectOne($sql, [(string)$name]);
     }
 
@@ -259,7 +262,7 @@ class TechParam extends Model
      * Получение списка всех единиц измерения
      */
     public function get_units() {
-        $unitsSql = "
+        $sql = "
             (
                 SELECT
                     0          as `id`,
@@ -281,15 +284,14 @@ class TechParam extends Model
                     `name` ASC
             )
         ";
-    
-        return $this->db->select($unitsSql);
+        return $this->db->select($sql);
     }
 
     /**
      * Получение списка всех единиц измерения и значений для указанного параметра
      */
     public function get_units_and_values($paramId) {
-        $valuesSql = "
+        $sql = "
             SELECT
                 `dirty_param_unit_id`      as `unit_id`,
                 `dirty_param_unit_value`  as `unit_name`,
@@ -314,8 +316,40 @@ class TechParam extends Model
                 `unit_name` ASC,
                 `value` ASC
         ";
-        
-        return $this->db->select($valuesSql, [(int)$paramId]);
+        return $this->db->select($sql, [(int)$paramId]);
+    }
+
+    /**
+     * Получение значения additional для параметра
+     */
+    public function get_param_additional($paramId) {
+        $sql = "
+            SELECT MAX(`dirty_param_additional`) as `dirty_param_additional`
+            FROM `dirty_param`
+            WHERE 1
+                AND `dirty_param_dirty_param_name_id` = ?
+                AND `dirty_param_dirty_type_id`       = 1
+                AND `dirty_param_remove_user_id`      = 0
+        ";
+        $result = $this->db->selectOne($sql, [$paramId]);
+        return $result ? $result->dirty_param_additional : 0;
+    }
+
+    /**
+     * Получение значения checked для параметра
+     */
+    public function get_param_checked($paramId)
+    {
+        $sql = "
+            SELECT MAX(`dirty_param_checked`) as `dirty_param_checked`
+            FROM `dirty_param`
+            WHERE 1
+                AND `dirty_param_dirty_param_name_id` = ?
+                AND `dirty_param_dirty_type_id` = 1
+                AND `dirty_param_remove_user_id` = 0
+        ";
+        $result = $this->db->selectOne($sql, [$paramId]);
+        return $result ? $result->dirty_param_checked : 0;
     }
 
     /**
@@ -325,17 +359,16 @@ class TechParam extends Model
         $sql = "
             SELECT
                 `dirty_param_dirty_group_id` as `group_id`,
-                `dirty_group_name` as `group_name`,
-                `dirty_param_dirty_file_id` as `file_id`,
-                `dirty_file_name` as `file_name`
+                `dirty_group_name`           as `group_name`,
+                `dirty_param_dirty_file_id`  as `file_id`,
+                `dirty_file_name`            as `file_name`
             FROM `dirty_param`
                 LEFT JOIN `dirty_group` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_dirty_type_id` = `dirty_param_dirty_type_id` AND `dirty_group_remove_user_id` = 0)
-                INNER JOIN `dirty_file` ON (`dirty_file_id` = `dirty_param_dirty_file_id` AND `dirty_file_remove_user_id` = 0)
+                INNER JOIN `dirty_file` ON (`dirty_file_id`  = `dirty_param_dirty_file_id`  AND `dirty_file_remove_user_id` = 0)
             WHERE 1
                 AND `dirty_param_dirty_param_name_id` = ?
-                AND `dirty_param_dirty_type_id` = 1
-                AND `dirty_param_remove_user_id` = 0
-                #AND `dirty_param_dirty_group_id` > 0
+                AND `dirty_param_dirty_type_id`       = 1
+                AND `dirty_param_remove_user_id`      = 0
             GROUP BY
                 `dirty_param_dirty_group_id`,
                 `dirty_param_dirty_file_id`
@@ -343,7 +376,6 @@ class TechParam extends Model
                 `group_name` ASC,
                 `file_name` ASC
         ";
-        
         return $this->db->select($sql, [(int)$paramId]);
     }
 
@@ -382,8 +414,29 @@ class TechParam extends Model
 
             //====== ГРУППЫ ======\\
             // Получаем все группы к которому привязан текущий параметр
-            $dbGroups = $this->db->select("SELECT * FROM `dirty_param` WHERE `dirty_param_dirty_param_name_id` = ? AND `dirty_param_dirty_group_id` > 0 AND `dirty_param_dirty_type_id` = 1 AND `dirty_param_remove_user_id` = 0", [(int)$toParamNameId]);
+            $sql = "
+                SELECT
+                    `dirty_param_id`             as `paramId`,
+                    `dirty_param_dirty_group_id` as `groupId`
+
+                FROM `dirty_param`
+                INNER JOIN `dirty_file` ON (`dirty_file_id`  = `dirty_param_dirty_file_id`  AND `dirty_file_remove_user_id` = 0)
+                WHERE 1
+                    AND `dirty_param_dirty_param_name_id` = ?
+                    AND `dirty_param_dirty_type_id`       = 1
+                    AND `dirty_param_remove_user_id`      = 0
+                GROUP BY
+                    `paramId`
+            ";
+            $dbGroups = $this->db->select($sql, [(int)$toParamNameId]);
             Log::debug($dbGroups);
+
+            Log::debug($groupLinks);
+
+            foreach($dbGroups as $dbGroup)
+            {
+
+            }
 
             $this->db->commit();
             return true;
@@ -469,7 +522,6 @@ class TechParam extends Model
                 AND `dirty_param_value_remove_user_id` = 0
             LIMIT 1
         ";
-        
         return $this->db->selectOne($sql, [(string)$value]);
     }
 
