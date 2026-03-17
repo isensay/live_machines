@@ -89,14 +89,3 @@ div.dataTables_wrapper div.dataTables_paginate {
     color: #0056b3;
     font-weight: 500;
 }
-
-
-#preloader .info {
-    margin-top: 35px;
-    text-align: center;
-    width: 100%;
-    position: absolute;
-    left:0;
-    right:0;
-    top:50%;
-}

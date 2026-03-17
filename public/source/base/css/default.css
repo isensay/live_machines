@@ -14,3 +14,13 @@ h4 span.title-default {
         display: none;
     }
 }
+
+#preloader .info {
+    margin-top: 35px;
+    text-align: center;
+    width: 100%;
+    position: absolute;
+    left:0;
+    right:0;
+    top:50%;
+}

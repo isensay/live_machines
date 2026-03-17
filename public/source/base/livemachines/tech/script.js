@@ -1,19 +1,18 @@
 $(document).ready(function() {
+    // Счетчик для новых строк
+    let newRowCounter = 0;
 
     // ===== КНОПКИ КОПИРОВАНИЯ В ТЕКСТОВЫХ ОПИСАНИЯХ =====
     $(document).on('click', '.copy-group-icon', function(e) {
         e.preventDefault();
         e.stopPropagation();
         
-        // Убираем фокус с кнопки закрытия
         $('.btn-close').blur();
         
-        // Убираем фокус с любого активного элемента
         if (document.activeElement && document.activeElement.blur) {
             document.activeElement.blur();
         }
         
-        // Небольшая задержка для гарантии снятия фокуса
         setTimeout(function() {
             applyToAllGroups();
         }, 20);
@@ -25,15 +24,12 @@ $(document).ready(function() {
         e.preventDefault();
         e.stopPropagation();
         
-        // Убираем фокус с кнопки закрытия
         $('.btn-close').blur();
         
-        // Убираем фокус с любого активного элемента
         if (document.activeElement && document.activeElement.blur) {
             document.activeElement.blur();
         }
         
-        // Небольшая задержка для гарантии снятия фокуса
         setTimeout(function() {
             applyToAllValues();
         }, 20);
@@ -46,10 +42,8 @@ $(document).ready(function() {
     const references = { groups: [], units: [], files: [] };
     let referencesLoaded = false;
     
-    // Получаем CSRF-токен из мета-тега
     const csrfToken = $('meta[name="csrf-token"]').attr('content');
     
-    // Получаем таблицу и ее data-атрибуты
     const $table = $('#basic-datatable');
     const dataUrl = $table.data('url');
     const referencesUrl = $table.data('references-url');
@@ -59,7 +53,7 @@ $(document).ready(function() {
     
     initSelect2();
     initDataTable();
-    loadReferences(); // Загружаем справочники сразу
+    loadReferences();
     
     // ===== SELECT2 ДЛЯ ФИЛЬТРОВ =====
     function initSelect2() {
@@ -85,10 +79,7 @@ $(document).ready(function() {
                 }
             },
             columns: [
-                { 
-                    data: 'paramName',
-                    name: 'paramName'
-                },
+                { data: 'paramName', name: 'paramName' },
                 { 
                     data: 'groups', 
                     name: 'groups',
@@ -299,25 +290,41 @@ $(document).ready(function() {
         $('#edit_param_additional').prop('checked', data.additional == 1);
         $('#edit_param_checked').prop('checked', data.checked == 1);
         
-        window.currentParamFiles = data.param_files || [];
+        // Для новых записей используем все файлы, для существующих - все файлы
+        // window.currentParamFiles = data.param_files || []; // Больше не используем фильтрацию
         
+        // Сбрасываем счетчик новых строк
+        newRowCounter = 0;
+        
+        // Заполняем привязки к группам
         $('#group-links-container').empty();
         if (data.group_links && data.group_links.length > 0) {
-            data.group_links.forEach((link, index) => addGroupLinkRow(link, index));
-        } else {
-            addGroupLinkRow({}, 0);
+            data.group_links.forEach((link, index) => {
+                // Для существующих записей используем реальный ID из БД (dirty_param_id)
+                const rowId = 'param_' + link.param_id; // Используем param_id из ответа
+                addGroupLinkRow(link, index, rowId, true);
+            });
         }
-        
+
+        // Заполняем значения
         $('#values-container').empty();
         if (data.values && data.values.length > 0) {
-            data.values.forEach(value => addValueRow(value));
-        } else {
-            addValueRow({});
+            data.values.forEach((value, index) => {
+                // Для существующих записей используем реальный ID из БД (dirty_param_id)
+                const rowId = 'param_' + value.param_id; // Используем param_id из ответа
+                addValueRow(value, index, rowId, true);
+            });
         }
     }
 
     // ===== ДОБАВЛЕНИЕ СТРОКИ С ГРУППОЙ =====
-    function addGroupLinkRow(link = {}, index) {
+    function addGroupLinkRow(link = {}, index, rowId = null, fromExisting = false) {
+        // Если rowId не передан, генерируем новый для связи
+        if (!rowId) {
+            newRowCounter++;
+            rowId = 'new_param_' + newRowCounter;
+        }
+        
         const isExisting = link.file_id ? true : false;
         const groupIdValue = link.group_id || '0';
         
@@ -339,7 +346,8 @@ $(document).ready(function() {
         }
         
         const rowHtml = `
-        <div class="row mb-2 group-link-row align-items-center" data-row-index="${index}" data-existing="${isExisting}">
+        <div class="row mb-2 group-link-row align-items-center" data-row-index="${index}" 
+             data-existing="${isExisting}" data-row-id="${rowId}" data-type="group">
             <div class="col-md-6">
                 <select class="form-control group-select" style="width: 100%;" name="group_links[][group_id]">
                     <option value="">Выберите группу</option>
@@ -350,7 +358,7 @@ $(document).ready(function() {
             </div>
             <div class="col-md-2 text-end">
                 <div class="d-flex justify-content-end gap-1">
-                    <button type="button" class="btn btn-sm btn-primary remove-group-link" title="Удалить">
+                    <button type="button" class="btn btn-sm btn-primary remove-group-link" title="Удалить" ${fromExisting ? 'disabled' : ''}>
                         <i class="mdi mdi-delete"></i>
                     </button>
                 </div>
@@ -361,6 +369,7 @@ $(document).ready(function() {
         $('#group-links-container').append(rowHtml);
         const $newRow = $('#group-links-container .group-link-row:last');
         
+        // Инициализируем Select2 для группы
         const $groupSelect = $newRow.find('.group-select');
         references.groups.forEach(group => {
             $groupSelect.append(new Option(group.name, group.id, false, link.group_id == group.id));
@@ -382,9 +391,11 @@ $(document).ready(function() {
             $groupSelect.val(link.group_id).trigger('change');
         }
         
+        // Если это новая строка, инициализируем select для файла
         if (!isExisting) {
             const $fileSelect = $newRow.find('.group-file-select');
             
+            // Добавляем все файлы из справочника
             references.files.forEach(file => {
                 const selected = (link.file_id == file.id) ? 'selected' : '';
                 $fileSelect.append(`<option value="${file.id}" ${selected}>${file.name}</option>`);
@@ -404,11 +415,48 @@ $(document).ready(function() {
                     return $('<span><i class="mdi mdi-file-outline text-info me-1"></i>' + data.text + '</span>');
                 }
             });
+            
+            // При изменении файла обновляем связанную строку в значениях
+            $fileSelect.on('change', function() {
+                const selectedFileId = $(this).val();
+                const selectedFileName = $(this).find('option:selected').text();
+                
+                // Ищем связанную строку в значениях по rowId
+                const $linkedValueRow = $(`#values-container .value-row[data-row-id="${rowId}"]`);
+                
+                if ($linkedValueRow.length) {
+                    // Обновляем файл в связанной строке
+                    const $valueFileSelect = $linkedValueRow.find('.file-select');
+                    if ($valueFileSelect.length) {
+                        $valueFileSelect.val(selectedFileId).trigger('change');
+                    } else {
+                        // Для существующих записей обновляем скрытое поле
+                        $linkedValueRow.find('.file-id-input').val(selectedFileId);
+                        $linkedValueRow.find('.file-name-display').html(
+                            `<i class="mdi mdi-file-outline text-info me-1"></i>${selectedFileName}`
+                        );
+                    }
+                } else if (selectedFileId && selectedFileId != '0') {
+                    // Если нет связанной строки, создаем новую в значениях
+                    addValueRow({ file_id: selectedFileId, file_name: selectedFileName }, 
+                               $('#values-container .value-row').length, 
+                               rowId, 
+                               false);
+                }
+            });
         }
+        
+        return $newRow;
     }
 
     // ===== ДОБАВЛЕНИЕ СТРОКИ ЗНАЧЕНИЯ =====
-    function addValueRow(value = {}) {
+    function addValueRow(value = {}, index, rowId = null, fromExisting = false) {
+        // Если rowId не передан, генерируем новый для связи
+        if (!rowId) {
+            newRowCounter++;
+            rowId = 'new_param_' + newRowCounter;
+        }
+        
         const isExisting = (value.value_id || value.file_id) ? true : false;
         const valueIdAttr = value.value_id ? `data-value-id="${value.value_id}"` : '';
         
@@ -429,7 +477,8 @@ $(document).ready(function() {
         }
         
         const rowHtml = `
-        <tr class="value-row" data-existing="${isExisting}" ${valueIdAttr}>
+        <tr class="value-row" data-existing="${isExisting}" ${valueIdAttr} 
+            data-row-id="${rowId}" data-type="value">
             <td style="width: 30%;">
                 <select class="form-control unit-select" style="width: 100%;" name="values[][unit_id]"></select>
             </td>
@@ -441,7 +490,7 @@ $(document).ready(function() {
                 ${fileFieldHtml}
             </td>
             <td style="width: 10%;" class="text-end pe-3">
-                <button type="button" class="btn btn-sm btn-primary remove-value-row" title="Удалить" ${isExisting ? '' : ''}>
+                <button type="button" class="btn btn-sm btn-primary remove-value-row" title="Удалить" ${fromExisting ? '' : ''}>
                     <i class="mdi mdi-delete"></i>
                 </button>
             </td>
@@ -451,6 +500,7 @@ $(document).ready(function() {
         $('#values-container').append(rowHtml);
         const $newRow = $('#values-container tr:last');
         
+        // Инициализируем Select2 для единицы измерения
         const $unitSelect = $newRow.find('.unit-select');
         references.units.forEach(unit => {
             const selected = (value.unit_id == unit.id) ? 'selected' : '';
@@ -489,11 +539,14 @@ $(document).ready(function() {
             }
         });
         
+        // Если это новая строка, инициализируем select для файла
         if (!isExisting) {
             const $fileSelect = $newRow.find('.file-select');
-            const paramFiles = window.currentParamFiles || [];
             
-            paramFiles.forEach(file => {
+            $fileSelect.append('<option value="0">Без файла</option>');
+            
+            // Добавляем все файлы из справочника
+            references.files.forEach(file => {
                 const selected = (value.file_id == file.id) ? 'selected' : '';
                 $fileSelect.append(`<option value="${file.id}" ${selected}>${file.name}</option>`);
             });
@@ -513,11 +566,72 @@ $(document).ready(function() {
                 }
             });
             
+            // При выборе файла создаем или обновляем связанную строку в группах
+            $fileSelect.on('change', function() {
+                const selectedFileId = $(this).val();
+                const selectedFileName = $(this).find('option:selected').text();
+                
+                if (selectedFileId && selectedFileId != '0') {
+                    // Ищем связанную строку в группах по rowId
+                    let $linkedGroupRow = $(`#group-links-container .group-link-row[data-row-id="${rowId}"]`);
+                    
+                    if (!$linkedGroupRow.length) {
+                        // Создаем новую строку в группах с тем же rowId
+                        $linkedGroupRow = addGroupLinkRow(
+                            { file_id: selectedFileId, file_name: selectedFileName }, 
+                            $('#group-links-container .group-link-row').length, 
+                            rowId, 
+                            false
+                        );
+                    } else {
+                        // Обновляем существующую строку
+                        const $groupFileSelect = $linkedGroupRow.find('.group-file-select');
+                        if ($groupFileSelect.length) {
+                            $groupFileSelect.val(selectedFileId).trigger('change');
+                        } else {
+                            // Для существующих записей обновляем скрытое поле
+                            $linkedGroupRow.find('.file-id-input').val(selectedFileId);
+                            $linkedGroupRow.find('.file-name-display').html(
+                                `<i class="mdi mdi-file-outline text-info me-1"></i>${selectedFileName}`
+                            );
+                        }
+                    }
+                }
+            });
+            
             if (value.file_id) {
                 $fileSelect.val(value.file_id).trigger('change');
             }
         }
+        
+        return $newRow;
     }
+    
+    // ===== ОБРАБОТЧИК УДАЛЕНИЯ СТРОК ЗНАЧЕНИЙ =====
+    $('#values-container').on('click', '.remove-value-row:not(:disabled)', function() {
+        const $row = $(this).closest('tr');
+        const rowId = $row.data('row-id');
+        
+        // Удаляем связанную строку в группах
+        if (rowId) {
+            $(`#group-links-container .group-link-row[data-row-id="${rowId}"]`).remove();
+        }
+        
+        $row.remove();
+    });
+    
+    // ===== ОБРАБОТЧИК УДАЛЕНИЯ СТРОК ГРУПП =====
+    $('#group-links-container').on('click', '.remove-group-link:not(:disabled)', function() {
+        const $row = $(this).closest('.group-link-row');
+        const rowId = $row.data('row-id');
+        
+        // Удаляем связанную строку в значениях
+        if (rowId) {
+            $(`#values-container .value-row[data-row-id="${rowId}"]`).remove();
+        }
+        
+        $row.remove();
+    });
     
     // ===== ПРИМЕНИТЬ КО ВСЕМ ГРУППАМ =====
     function applyToAllGroups() {
@@ -651,7 +765,6 @@ $(document).ready(function() {
                 placeholder: 'Выберите файл',
                 language: 'ru',
                 width: '100%',
-                allowClear: true,
                 templateResult: (data) => {
                     if (data.loading || !data.id) return data.text;
                     if (data.id == '0') {
@@ -675,14 +788,13 @@ $(document).ready(function() {
             }
             
             const currentVal = $this.val();
-            const paramFiles = window.currentParamFiles || [];
             
             if ($this.data('select2')) {
                 $this.select2('destroy');
             }
             
             $this.empty().append('<option value="0">Без файла</option>');
-            paramFiles.forEach(file => {
+            references.files.forEach(file => {
                 $this.append(`<option value="${file.id}">${file.name}</option>`);
             });
             
@@ -691,7 +803,6 @@ $(document).ready(function() {
                 placeholder: 'Выберите файл',
                 language: 'ru',
                 width: '100%',
-                allowClear: true,
                 templateResult: (data) => {
                     if (data.loading || !data.id) return data.text;
                     if (data.id == '0') {
@@ -738,12 +849,12 @@ $(document).ready(function() {
     
     // ===== СОБЫТИЯ ДЛЯ ГРУПП =====
     $('#addGroupLinkBtn').on('click', function() {
-        const currentCount = $('#group-links-container .group-link-row').length;
-        addGroupLinkRow({}, currentCount);
-    });
-    
-    $('#group-links-container').on('click', '.remove-group-link', function() {
-        $(this).closest('.group-link-row').remove();
+        Swal.fire({
+            title: 'Внимание!',
+            text: 'Строки групп создаются автоматически при выборе файла в блоке значений',
+            icon: 'info',
+            timer: 2000
+        });
     });
     
     // ===== СОБЫТИЯ ДЛЯ ЗНАЧЕНИЙ =====
@@ -751,11 +862,7 @@ $(document).ready(function() {
         addValueRow({});
     });
     
-    $('#values-container').on('click', '.remove-value-row', function() {
-        $(this).closest('tr').remove();
-    });
-    
-    // ===== КНОПКИ КОПИРОВАНИЯ В ТЕКСТОВЫХ ОПИСАНИЯХ =====
+    // ===== КНОПКИ КОПИРОВАНИЯ =====
     $(document).on('click', '.copy-group-icon', function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -874,6 +981,7 @@ $(document).ready(function() {
             'name': $('#edit_param_name').val(),
             'additional': $('#edit_param_additional').is(':checked') ? 1 : 0,
             'checked': $('#edit_param_checked').is(':checked') ? 1 : 0,
+            'additional_filter': $('#additional-select2').val(),
             'group_links': [],
             'values': []
         };
@@ -889,57 +997,87 @@ $(document).ready(function() {
         console.log('=== НАЧАЛО СБОРА ДАННЫХ ===');
         console.log('Всего строк групп:', $('.group-link-row').length);
 
-        // Собираем все привязки к группам
+        // Собираем все привязки к группам с param_id
         $('.group-link-row').each(function(index) {
             const $row = $(this);
             
-            let groupId, fileId;
+            let groupId, fileId, paramId;
+            
+            // Получаем rowId для определения типа записи
+            const rowId = $row.data('row-id');
+            
+            // Определяем param_id
+            if (rowId && rowId.startsWith('new_param_')) {
+                // Новая запись - используем new_param_X
+                paramId = rowId;
+                console.log(`Строка групп ${index}: НОВАЯ запись, param_id =`, paramId);
+            } else if (rowId && rowId.startsWith('param_')) {
+                // Существующая запись - используем param_X (где X - dirty_param_id)
+                paramId = rowId;
+                console.log(`Строка групп ${index}: СУЩЕСТВУЮЩАЯ запись, param_id =`, paramId);
+            } else {
+                // Fallback - используем ID параметра
+                paramId = 'param_' + $('#edit_param_id').val();
+                console.log(`Строка групп ${index}: FALLBACK, param_id =`, paramId);
+            }
             
             // Определяем group_id - ТОЛЬКО из select (актуальное значение)
             const $groupSelect = $row.find('.group-select');
             if ($groupSelect.length) {
                 groupId = $groupSelect.val();
-                console.log(`Строка ${index}: выбранное значение в select =`, groupId);
                 if (groupId === null || groupId === '') {
                     groupId = '0';
-                    console.log(`Строка ${index}: группа не выбрана (null/пусто), устанавливаем 0`);
                 }
             } else {
                 groupId = $row.find('.group-id-input').val() || '0';
-                console.log(`Строка ${index}: используем скрытое поле =`, groupId);
             }
             
             // Определяем file_id
             const $fileSelect = $row.find('.group-file-select');
             if ($fileSelect.length) {
                 fileId = $fileSelect.val();
-                console.log(`Строка ${index}: fileSelect.val() =`, fileId);
                 if (fileId === null) fileId = '0';
             } else {
                 fileId = $row.find('.file-id-input').val();
-                console.log(`Строка ${index}: file-id-input.val() =`, fileId);
             }
             
             // Добавляем в массив только если fileId определен и не равен '0'
             if (fileId !== undefined && fileId !== '0') {
                 formData.group_links.push({ 
+                    param_id: paramId,
                     group_id: groupId,
                     file_id: fileId
                 });
-                console.log(`Строка ${index}: ДОБАВЛЕНО →`, { group_id: groupId, file_id: fileId });
-            } else {
-                console.log(`Строка ${index}: ПРОПУЩЕНО (нет файла)`);
+                console.log(`Строка групп ${index}: ДОБАВЛЕНО →`, { param_id: paramId, group_id: groupId, file_id: fileId });
             }
         });
 
         console.log('ИТОГОВЫЙ group_links:', formData.group_links);
         
-        // Собираем ВСЕ значения (и существующие, и новые)
-        $('.value-row').each(function() {
+        // Собираем ВСЕ значения с param_id
+        $('.value-row').each(function(index) {
             const $row = $(this);
             const isExisting = $row.data('existing') === true;
             
-            let unitId, fileId, value;
+            let unitId, fileId, value, paramId, valueId;
+            
+            // Получаем rowId для определения типа записи
+            const rowId = $row.data('row-id');
+            
+            // Определяем param_id
+            if (rowId && rowId.startsWith('new_param_')) {
+                // Новая запись - используем new_param_X
+                paramId = rowId;
+            } else if (rowId && rowId.startsWith('param_')) {
+                // Существующая запись - используем param_X (где X - dirty_param_id)
+                paramId = rowId;
+            } else {
+                // Fallback - используем ID параметра
+                paramId = 'param_' + $('#edit_param_id').val();
+            }
+            
+            // Получаем value_id если есть
+            valueId = $row.data('value-id');
             
             if (isExisting) {
                 unitId = $row.find('.unit-select').val();
@@ -947,11 +1085,19 @@ $(document).ready(function() {
                 value = $row.find('.value-input').val().trim();
                 
                 formData.values.push({
+                    param_id: paramId,
                     unit_id: unitId || 0,
                     file_id: fileId || 0,
                     value: value,
                     is_existing: true,
-                    value_id: $row.data('value-id')
+                    value_id: valueId
+                });
+                console.log(`Строка значений ${index}: ДОБАВЛЕНО существующая →`, { 
+                    param_id: paramId, 
+                    unit_id: unitId || 0, 
+                    file_id: fileId || 0, 
+                    value: value,
+                    value_id: valueId
                 });
             } else {
                 unitId = $row.find('.unit-select').val();
@@ -960,14 +1106,23 @@ $(document).ready(function() {
                 
                 if (value) {
                     formData.values.push({
+                        param_id: paramId,
                         unit_id: unitId || 0,
                         file_id: fileId || 0,
                         value: value,
                         is_existing: false
                     });
+                    console.log(`Строка значений ${index}: ДОБАВЛЕНО новая →`, { 
+                        param_id: paramId, 
+                        unit_id: unitId || 0, 
+                        file_id: fileId || 0, 
+                        value: value 
+                    });
                 }
             }
         });
+        
+        console.log('ИТОГОВЫЙ values:', formData.values);
         
         const id = $('#edit_param_id').val();
 

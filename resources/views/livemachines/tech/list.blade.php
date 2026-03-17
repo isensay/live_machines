@@ -172,9 +172,11 @@
                                 </div>
                                 
                                 <div class="d-flex justify-content-between align-items-center mt-2">
+                                    {{--
                                     <button type="button" class="btn btn-outline-success" id="addGroupLinkBtn">
                                         <i class="mdi mdi-plus-circle me-1"></i> Добавить привязку к группе
                                     </button>
+                                    --}}
                                     <button type="button" class="btn btn-outline-success" id="createNewGroupBtn">
                                         <i class="mdi mdi-plus-circle me-1"></i> Создать группу
                                     </button>

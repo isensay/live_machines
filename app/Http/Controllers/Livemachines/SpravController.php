@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Livemachines\TechParam;
 
-class SpravController extends Controller
-{
+class SpravController extends Controller {
     private $techParam = null;
 
     private $dbConnection;
@@ -59,8 +58,7 @@ class SpravController extends Controller
     /**
      * Удаление всех файлов с которыми связана техническая характеристика
      */
-    public function tech_destroy(int $id)
-    {
+    public function tech_destroy(int $id) {
         try {
             $dbLm = DB::connection('livemachines');
             
@@ -159,8 +157,7 @@ class SpravController extends Controller
     /**
      * Получить данные для редактирования
      */
-    public function tech_edit_data($id, Request $request)
-    {
+    public function tech_edit_data($id, Request $request) {
         try {
             // Валидация
             $request->validate([
@@ -210,8 +207,7 @@ class SpravController extends Controller
     /**
      * Получить справочники для формы редактирования
      */
-    public function tech_get_references()
-    {
+    public function tech_get_references() {
         try {
             $groups = $this->techParam->get_groups(0, false); // Получение списка всех групп технических характеристик
             $units  = $this->techParam->get_units();          // Получение списка всех единиц измерения
@@ -238,8 +234,7 @@ class SpravController extends Controller
     /**
      * Обновление параметра
      */
-    public function tech_update(Request $request, $id)
-    {
+    public function tech_update(Request $request, $paramNameId) {
         Log::debug($request);
 
         // Искусственная задержка (для режима разработки)
@@ -258,11 +253,12 @@ class SpravController extends Controller
             'group_links' => 'array',
             'values' => 'array',
             'additional' => 'integer|in:0,1',
-            'checked' => 'integer|in:0,1'
+            'checked' => 'integer|in:0,1',
+            'additional_filter' => 'integer|in:0,1',
         ]);
 
         // Наименование параметра (начало)
-        $paramInfo = $this->techParam->get_info_from_id($id);
+        $paramInfo = $this->techParam->get_info_from_id($paramNameId);
 
         $result = false;
 
@@ -278,7 +274,7 @@ class SpravController extends Controller
         $lowerParamName = mb_strtolower($paramName);
         
         if ($lowerParamName == mb_strtolower($paramInfo->name)) {
-            $newParamNameId = $id; // Обновляем если например изменились регистры символов
+            $newParamNameId = $paramNameId; // Обновляем если например изменились регистры символов
         } elseif ($paramInfo = $this->techParam->get_info_from_name($paramName)) {
             $newParamNameId = $paramInfo->id; // Перепривязываем к уже имеющемуся в БД
         } else {
@@ -286,73 +282,87 @@ class SpravController extends Controller
         }
         // Наименование параметра (конец)
 
-        // Подготовка флага "дополнительный параметр"
-        $additional = $request->additional ?? 0;
-
-        // Подготовка статуса проверки
-        $checked = $request->checked ?? 0;
+        $additional = $request->additional ?? 0; // Подготовка флага "дополнительный параметр"
+        $checked    = $request->checked    ?? 0; // Подготовка статуса проверки
+        $additionalFilter = $request->additional_filter ?? 0; // Подготовка фильтра вида параметра
 
         // Привязки к группам
-        $groupLinks = $request->group_links ?? [];
-
-        //Log::debug('-->>', $groupLinks);
-
-        $validGroupLinks = [];
+        $validGroups = [];
+        $groups      = $request->group_links ?? [];
         
-        foreach($groupLinks as $link) {
-            $groupId = (int)$link['group_id'];
-            $fileId = (int)$link['file_id'];
-            
-            if ($fileId > 0 && ($groupId == 0 || $this->techParam->get_group_info_from_id($groupId))) {
-                // Проверяем уникальность комбинации группа-файл
-                $key = $groupId . '-' . $fileId;
-                if (!isset($validGroupLinks[$key])) {
-                    $validGroupLinks[$key] = [
-                        'group_id' => $groupId,
-                        'file_id' => $fileId
-                    ];
-                }
+        foreach($groups as $group) {
+            $paramId = $group['param_id'];
+            $groupId = (int)$group['group_id'];
+            $fileId  = (int)$group['file_id'];
+
+            $el = explode('_', $paramId);
+
+            if (count($el) == 2 && $el[0] == 'param' && is_numeric($el[1]) && $el[1] > 0){
+                $paramId = $el[1];
+            } elseif (count($el) == 3 && $el[0] == 'new' && $el[1] == 'param' && is_numeric($el[2]) && $el[2] > 0) {
+                $paramId = 'new_' . $el[2];
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка в параметре группы'
+                ]);
             }
+
+            $validGroups[$paramId] = [
+                'groupId' => $groupId,
+                'fileId'  => $fileId,
+            ];
         }
 
-        Log::debug('-->>', $validGroupLinks);
+        //Log::debug($validGroups);
 
         // Единицы измерения и значения
         $values = $request->values ?? [];
         $validValues = [];
         
         foreach($values as $row) {
-            $unitId = (int)$row['unit_id'];
-            $fileId = (int)$row['file_id'];
-            
-            // Проверяем, что значение не null и приводим к строке
+            $paramId = $row['param_id'];
+            $unitId  = (int)$row['unit_id'];
+            $fileId  = (int)$row['file_id'];
+
             $valueRaw = $row['value'] ?? '';
-            $value = (string)trim(preg_replace('/\s+/', ' ', $valueRaw));
-            
-            if ($fileId >= 0) {
-                $key = $unitId . '-' . $fileId; // . '-' . md5($value);
-                if (!isset($validValues[$key])) {
-                    $validValues[$key] = [
-                        'unit_id' => $unitId,
-                        'file_id' => $fileId,
-                        'value' => $value
-                    ];
-                }
+            $value    = (string)trim(preg_replace('/\s+/', ' ', $valueRaw));
+
+            $el = explode('_', $paramId);
+
+            if (count($el) == 2 && $el[0] == 'param' && is_numeric($el[1]) && $el[1] > 0){
+                $paramId = $el[1];
+            } elseif (count($el) == 3 && $el[0] == 'new' && $el[1] == 'param' && is_numeric($el[2]) && $el[2] > 0) {
+                $paramId = 'new_' . $el[2];
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка в ед.измерения и/или значениях'
+                ]);
+            }
+
+            $validValues[$paramId] = [
+                'unitId' => $unitId,
+                'value'  => $value,
+                'fileId' => $fileId,
+            ];
+        }
+
+        //Log::debug($validValues);
+
+        $validParams = [];
+
+        foreach($validValues as $key => $validValue)
+        {
+            if (isset($validGroups[$key])) {
+                $validParams[$key] = array_merge($validGroups[$key], $validValue);
             }
         }
 
-        //Log::debug('Updating param', [
-        //    'name'        => $paramName,
-        //    'from_id'     => $id,
-        //    'to_id'       => $newParamNameId,
-        //    'group_links' => $validGroupLinks,
-        //    'values'      => $validValues,
-        //    'additional'  => $additional,
-        //    'checked'     => $checked,
-        //]);
+        //Log::debug($validParams);
 
         // Обновляем данные
-        $result = $this->techParam->set($paramName, $id, $newParamNameId, $validGroupLinks, $validValues, $additional, $checked);
+        $result = $this->techParam->set($paramName, $paramNameId, $newParamNameId, $validParams, $additionalFilter, $additional, $checked);
 
         if ($result === true) {
             return response()->json([
@@ -370,8 +380,7 @@ class SpravController extends Controller
     /**
      * Создание новой группы
      */
-    public function group_create(Request $request)
-    {
+    public function group_create(Request $request) {
         try {
             $request->validate([
                 'name' => 'required|string|max:255'
