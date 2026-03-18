@@ -10,7 +10,6 @@ use App\Models\Livemachines\TechParam;
 
 class SpravController extends Controller {
     private $techParam = null;
-
     private $dbConnection;
 
     public function __construct() {
@@ -157,18 +156,43 @@ class SpravController extends Controller {
     /**
      * Получить данные для редактирования
      */
-    public function tech_edit_data($id, Request $request) {
+    public function tech_edit_data(Request $request, $paramNameId = null) {
         try {
+            // Проверяем, это создание нового параметра?
+            $isNew = $request->get('new') === 'true' || $paramNameId === null;
+
+            // Получаем значение additional из запроса
+            $additional = $request->get('additional', '0'); // По умолчанию '0'
+
+            if ($isNew) {
+                // Валидация
+                $request->validate(['additional' => 'integer|in:0,1']);
+
+                // Для нового параметра возвращаем пустые данные
+                return response()->json([
+                    'success' => true,
+                    'data'    => [
+                        'param' => [
+                            'id'      => null,
+                            'name'    => '',
+                            'type_id' => 1,
+                        ],
+                        'group_links' => [],
+                        'values'      => [],
+                        'param_files' => [],
+                        'additional'  => $additional,
+                        'checked'     => 0,
+                    ]
+                ]);
+            }
+
             // Валидация
             $request->validate([
                 'id'         => 'integer',
                 'additional' => 'integer|in:0,1'
             ]);
 
-            // Получаем значение additional из запроса
-            $additional = $request->get('additional', '0'); // По умолчанию '0'
-
-            $param = $this->techParam->get_info_from_id($id); // Получаем основную информацию о параметре
+            $param = $this->techParam->get_info_from_id($paramNameId); // Получаем основную информацию о параметре
             
             if (!$param) {
                 return response()->json([
@@ -177,15 +201,14 @@ class SpravController extends Controller {
                 ], 404);
             }
             
-            $groupLinks = $this->techParam->get_param_group_links($id, $additional); // Получаем привязки к группам с информацией о файлах
-            //$additional = $this->techParam->get_param_additional($id);  // Получаем дополнительную информацию о параметре (additional)
-            $checked    = $this->techParam->get_param_checked($id);     // Получаем дополнительную информацию о параметре (checked)
-            $values     = $this->techParam->get_units_and_values($id, $additional);  // Получаем все значения с привязкой к файлам
-            $paramFiles = $this->techParam->get_param_files($id, $additional);       // Получаем список всех файлов для параметра
+            $groupLinks = $this->techParam->get_param_group_links($paramNameId, $additional); // Получаем привязки к группам с информацией о файлах
+            $checked    = $this->techParam->get_param_checked($paramNameId);                  // Получаем дополнительную информацию о параметре (checked)
+            $values     = $this->techParam->get_units_and_values($paramNameId, $additional);  // Получаем все значения с привязкой к файлам
+            $paramFiles = $this->techParam->get_param_files($paramNameId, $additional);       // Получаем список всех файлов для параметра
             
             return response()->json([
                 'success' => true,
-                'data' => [
+                'data'    => [
                     'param'       => $param,
                     'group_links' => $groupLinks,
                     'values'      => $values,
@@ -196,7 +219,6 @@ class SpravController extends Controller {
             ]);
         } catch (\Exception $e) {
             Log::error('Error getting edit data: ' . $e->getMessage());
-            
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка загрузки данных: ' . $e->getMessage()
@@ -232,9 +254,9 @@ class SpravController extends Controller {
     }
 
     /**
-     * Обновление параметра
+     * Валидация и подготовка входных данных
      */
-    public function tech_update(Request $request, $paramNameId) {
+    private function tech_validate_and_prepare($request, $paramNameId = null) {
         Log::debug($request);
 
         // Искусственная задержка (для режима разработки)
@@ -242,49 +264,49 @@ class SpravController extends Controller {
             usleep(500000);
         }
 
-        // Очищаем входные данные
+        if ($paramNameId == 'new') {
+            $paramNameId = 0;
+        } elseif (is_numeric($paramNameId) && (int)$paramNameId > 0) {
+            $paramNameId = (int)$paramNameId;
+        } else {
+            return 'Неверный идентификатор параметра';
+        }
+
+        // Очищаем от пробелов входные данные
         $request->merge([
             'name' => trim($request->name ?? '')
         ]);
 
         // Валидация
         $request->validate([
-            'name' => 'required|string|max:255',
-            'group_links' => 'array',
-            'values' => 'array',
-            'additional' => 'integer|in:0,1',
-            'checked' => 'integer|in:0,1',
+            'name'              => 'required|string|max:255',
+            'group_links'       => 'array',
+            'values'            => 'array',
+            'additional'        => 'integer|in:0,1',
+            'checked'           => 'integer|in:0,1',
             'additional_filter' => 'integer|in:0,1',
         ]);
 
-        // Наименование параметра (начало)
-        $paramInfo = $this->techParam->get_info_from_id($paramNameId);
+        $paramName = $request->name ?? '';
+        $paramName = preg_replace('/\s+/', ' ', $request->name);
 
-        $result = false;
-
-        if (!$paramInfo) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Параметр не найден'
-            ]);
-        }
-        
-        $paramName      = $request->name ?? '';
-        $paramName      = preg_replace('/\s+/', ' ', $request->name);
-        $lowerParamName = mb_strtolower($paramName);
-        
-        if ($lowerParamName == mb_strtolower($paramInfo->name)) {
-            $newParamNameId = $paramNameId; // Обновляем если например изменились регистры символов
-        } elseif ($paramInfo = $this->techParam->get_info_from_name($paramName)) {
-            $newParamNameId = $paramInfo->id; // Перепривязываем к уже имеющемуся в БД
+        // Наименование параметра
+        if ($paramNameId > 0) {
+            $paramInfo = $this->techParam->get_info_from_id($paramNameId);
+            $newParamNameId = $paramNameId;
+            if (!$paramInfo) return 'Параметр не найден';
         } else {
-            $newParamNameId = 0; // Создаем новый параметр
+            $paramInfo      = $this->techParam->get_info_from_name($paramName, true);
+            $paramNameId    = $paramInfo->id;
+            $newParamNameId = $paramNameId;
         }
-        // Наименование параметра (конец)
 
-        $additional = $request->additional ?? 0; // Подготовка флага "дополнительный параметр"
-        $checked    = $request->checked    ?? 0; // Подготовка статуса проверки
-        $additionalFilter = $request->additional_filter ?? 0; // Подготовка фильтра вида параметра
+        // Подготовка флагов
+        $additional = $request->additional ?? 0; // дополнительный параметр
+        $checked    = $request->checked    ?? 0; // статус проверки
+
+        // Фильтр вида параметра
+        $additionalFilter = $request->additional_filter ?? 0;
 
         // Привязки к группам
         $validGroups = [];
@@ -302,10 +324,7 @@ class SpravController extends Controller {
             } elseif (count($el) == 3 && $el[0] == 'new' && $el[1] == 'param' && is_numeric($el[2]) && $el[2] > 0) {
                 $paramId = 'new_' . $el[2];
             } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ошибка в параметре группы'
-                ]);
+                return 'Ошибка в параметре группы';
             }
 
             $validGroups[$paramId] = [
@@ -335,10 +354,7 @@ class SpravController extends Controller {
             } elseif (count($el) == 3 && $el[0] == 'new' && $el[1] == 'param' && is_numeric($el[2]) && $el[2] > 0) {
                 $paramId = 'new_' . $el[2];
             } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ошибка в ед.измерения и/или значениях'
-                ]);
+                return 'Ошибка в ед.измерения и/или значениях';
             }
 
             $validValues[$paramId] = [
@@ -361,8 +377,80 @@ class SpravController extends Controller {
 
         //Log::debug($validParams);
 
+        return [
+            'paramName'        => $paramName,
+            'paramNameId'      => $paramNameId,
+            'newParamNameId'   => $newParamNameId,
+            'validParams'      => $validParams,
+            'additionalFilter' => $additionalFilter,
+            'additional'       => $additional,
+            'checked'          => $checked
+        ];
+    }
+
+    /**
+     * Создание нового параметра
+     */
+    public function tech_create(Request $request)
+    {
+        // Валидируем и подготавливаем входные данные
+        $validAndPrepareData = $this->tech_validate_and_prepare($request, 'new');
+
+        if (is_string($validAndPrepareData)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: ' . $validAndPrepareData
+            ]);
+        }
+
         // Обновляем данные
-        $result = $this->techParam->set($paramName, $paramNameId, $newParamNameId, $validParams, $additionalFilter, $additional, $checked);
+        $result = $this->techParam->create(
+            $validAndPrepareData['paramName'],
+            $validAndPrepareData['paramNameId'],
+            $validAndPrepareData['newParamNameId'],
+            $validAndPrepareData['validParams'],
+            $validAndPrepareData['additionalFilter'],
+            $validAndPrepareData['additional'],
+            $validAndPrepareData['checked']
+        );
+
+        if ($result === true) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Параметр успешно обновлен'
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: '.$result
+            ]);
+        }
+    }
+
+    /**
+     * Обновление параметра
+     */
+    public function tech_update(Request $request, $paramNameId) {
+        // Валидируем и подготавливаем входные данные
+        $validAndPrepareData = $this->tech_validate_and_prepare($request, $paramNameId);
+
+        if (is_string($validAndPrepareData)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: ' . $validAndPrepareData
+            ]);
+        }
+
+        // Обновляем данные
+        $result = $this->techParam->set(
+            $validAndPrepareData['paramName'],
+            $validAndPrepareData['paramNameId'],
+            $validAndPrepareData['newParamNameId'],
+            $validAndPrepareData['validParams'],
+            $validAndPrepareData['additionalFilter'],
+            $validAndPrepareData['additional'],
+            $validAndPrepareData['checked']
+        );
 
         if ($result === true) {
             return response()->json([
@@ -578,14 +666,6 @@ class SpravController extends Controller {
             'description' => '',
             'data'        => $data,
         ]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
     }
 
     /**

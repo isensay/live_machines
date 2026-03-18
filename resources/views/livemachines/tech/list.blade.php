@@ -108,7 +108,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h4 class="modal-title" id="editParamModalLabel">
-                        <i class="mdi mdi-pencil-circle"></i> Редактирование параметра
+                        <i class="mdi mdi-pencil-circle"></i> <span id="modalTitleText">Редактирование параметра</span>
                     </h4>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -178,7 +178,7 @@
                                     </button>
                                     --}}
                                     <button type="button" class="btn btn-outline-success" id="createNewGroupBtn">
-                                        <i class="mdi mdi-plus-circle me-1"></i> Создать группу
+                                        <i class="mdi mdi-plus-circle me-1"></i> Создать новую группу в справочнике
                                     </button>
                                 </div>
                             </div>

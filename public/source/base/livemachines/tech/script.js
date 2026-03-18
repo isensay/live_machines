@@ -2,6 +2,88 @@ $(document).ready(function() {
     // Счетчик для новых строк
     let newRowCounter = 0;
 
+    // ===== СОЗДАНИЕ НОВОГО ПАРАМЕТРА =====
+    $('.page-title-right .btn-success').on('click', function(e) {
+        e.preventDefault();
+        
+        const additionalValue = $('#additional-select2').val();
+        
+        if (!referencesLoaded) {
+            Swal.fire({
+                title: 'Загрузка...',
+                html: 'Загружаем справочники, пожалуйста подождите',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+            
+            loadReferences();
+            
+            const checkInterval = setInterval(() => {
+                if (referencesLoaded) {
+                    clearInterval(checkInterval);
+                    Swal.close();
+                    loadCreateData(additionalValue);
+                }
+            }, 100);
+        } else {
+            loadCreateData(additionalValue);
+        }
+    });
+
+    // ===== ЗАГРУЗКА ДАННЫХ ДЛЯ СОЗДАНИЯ =====
+    function loadCreateData(additionalValue) {
+        Swal.fire({ 
+            title: 'Загрузка...', 
+            html: 'Подготовка формы создания', 
+            allowOutsideClick: false, 
+            didOpen: () => Swal.showLoading() 
+        });
+
+        // Меняем заголовок
+        $('#modalTitleText').text('Создание нового параметра');
+        $('#editParamModalLabel i').attr('class', 'mdi mdi-plus-circle');
+        
+        // Используем специальный URL для создания с параметром new=true
+        $.ajax({
+            url: '/livemachines/sprav/tech/create?additional=' + additionalValue + '&new=true',
+            type: 'GET',
+            success: (response) => {
+                Swal.close();
+                if (response.success) {
+                    fillCreateModal(response.data);
+                    $('#editParamModal').modal('show');
+                } else {
+                    Swal.fire({ title: 'Ошибка!', text: response.message, icon: 'error' });
+                }
+            },
+            error: () => {
+                Swal.close();
+                Swal.fire({ title: 'Ошибка!', text: 'Не удалось загрузить данные', icon: 'error' });
+            }
+        });
+    }
+
+    // ===== ЗАПОЛНЕНИЕ МОДАЛЬНОГО ОКНА ДЛЯ СОЗДАНИЯ =====
+    function fillCreateModal(data) {
+        // Очищаем ID параметра (будет создан новый)
+        $('#edit_param_id').val('');
+        $('#edit_param_name').val('');
+        
+        // Устанавливаем чекбоксы по умолчанию
+        $('#edit_param_additional').prop('checked', data.additional == 1);
+        $('#edit_param_checked').prop('checked', false);
+        
+        // Сбрасываем счетчик новых строк
+        newRowCounter = 0;
+        
+        // Очищаем контейнеры
+        $('#group-links-container').empty();
+        $('#values-container').empty();
+        
+        // Добавляем одну пустую строку для значения (она создаст и строку группы)
+        addValueRow({});
+    }
+
     // ===== КНОПКИ КОПИРОВАНИЯ В ТЕКСТОВЫХ ОПИСАНИЯХ =====
     $(document).on('click', '.copy-group-icon', function(e) {
         e.preventDefault();
@@ -262,6 +344,10 @@ $(document).ready(function() {
             allowOutsideClick: false, 
             didOpen: () => Swal.showLoading() 
         });
+
+        // Меняем заголовок
+        $('#modalTitleText').text('Редактирование параметра');
+        $('#editParamModalLabel i').attr('class', 'mdi mdi-pencil-circle');
         
         $.ajax({
             url: editUrl + id + '?additional=' + additionalValue,
@@ -640,15 +726,15 @@ $(document).ready(function() {
         
         const firstGroupValue = $firstRow.find('.group-select').val();
         
-        if (!firstGroupValue) {
-            Swal.fire({
-                title: 'Внимание!',
-                text: 'В первой строке не выбрана группа',
-                icon: 'warning',
-                timer: 1500
-            });
-            return;
-        }
+        //if (!firstGroupValue) {
+        //    Swal.fire({
+        //        title: 'Внимание!',
+        //        text: 'В первой строке не выбрана группа',
+        //        icon: 'warning',
+        //        timer: 1500
+        //    });
+        //    return;
+        //}
         
         let appliedCount = 0;
         $('#group-links-container .group-link-row:not(:first)').each(function() {
@@ -659,13 +745,13 @@ $(document).ready(function() {
             appliedCount++;
         });
         
-        Swal.fire({
-            title: 'Готово!',
-            text: `Значения применены к ${appliedCount} группам`,
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false
-        });
+        //Swal.fire({
+        //    title: 'Готово!',
+        //    text: `Значения применены к ${appliedCount} группам`,
+        //    icon: 'success',
+        //    timer: 1500,
+        //    showConfirmButton: false
+        //});
     }
     
     // ===== ПРИМЕНИТЬ КО ВСЕМ ЗНАЧЕНИЯМ =====
@@ -676,25 +762,25 @@ $(document).ready(function() {
         const firstUnitValue = $firstRow.find('.unit-select').val();
         const firstValueText = $firstRow.find('.value-input').val();
         
-        if (!firstUnitValue) {
-            Swal.fire({
-                title: 'Внимание!',
-                text: 'В первой строке не выбрана единица измерения',
-                icon: 'warning',
-                timer: 1500
-            });
-            return;
-        }
+        //if (!firstUnitValue) {
+        //    Swal.fire({
+        //        title: 'Внимание!',
+        //        text: 'В первой строке не выбрана единица измерения',
+        //        icon: 'warning',
+        //        timer: 1500
+        //    });
+        //    return;
+        //}
         
-        if (!firstValueText) {
-            Swal.fire({
-                title: 'Внимание!',
-                text: 'В первой строке не заполнено значение',
-                icon: 'warning',
-                timer: 1500
-            });
-            return;
-        }
+        //if (!firstValueText) {
+        //    Swal.fire({
+        //        title: 'Внимание!',
+        //        text: 'В первой строке не заполнено значение',
+        //        icon: 'warning',
+        //        timer: 1500
+        //    });
+        //    return;
+        //}
         
         let appliedCount = 0;
         $('#values-container .value-row:not(:first)').each(function() {
@@ -708,13 +794,13 @@ $(document).ready(function() {
             appliedCount++;
         });
         
-        Swal.fire({
-            title: 'Готово!',
-            text: `Значения применены к ${appliedCount} строкам`,
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false
-        });
+        //Swal.fire({
+        //    title: 'Готово!',
+        //    text: `Значения применены к ${appliedCount} строкам`,
+        //    icon: 'success',
+        //    timer: 1500,
+        //    showConfirmButton: false
+        //});
     }
     
     // ===== ОБНОВЛЕНИЕ ВСЕХ SELECT2 ДЛЯ ГРУПП =====
@@ -1126,6 +1212,16 @@ $(document).ready(function() {
         
         const id = $('#edit_param_id').val();
 
+        // Определяем URL для сохранения (создание или обновление)
+        let saveUrl;
+        if (!id) {
+            // Новый параметр
+            saveUrl = '/livemachines/sprav/tech/create';
+        } else {
+            // Существующий параметр
+            saveUrl = updateUrl + id;
+        }
+
         Swal.fire({ 
             title: 'Сохранение...', 
             allowOutsideClick: false, 
@@ -1133,7 +1229,7 @@ $(document).ready(function() {
         });
         
         $.ajax({
-            url: updateUrl + id,
+            url: saveUrl,
             type: 'POST',
             data: JSON.stringify(formData),
             contentType: 'application/json',
