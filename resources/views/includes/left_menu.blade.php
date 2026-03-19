@@ -55,19 +55,19 @@
                                 <a href="#">Значения</a>
                             </li>
                             <li>
-                                <a href="{{ route('lm_tech.list') }}">Тех. характеристики</a>
+                                <a href="{{ route('lm_tech_list') }}">Тех. характеристики</a>
                             </li>
                             <li>
                                 <a href="#">Комплектации</a>
                             </li>
                             <li>
-                                <a href="{{ route('lm_model.list') }}">Модели</a>
+                                <a href="{{ route('lm_model_list') }}">Модели</a>
                             </li>
                             <li>
-                                <a href="{{ route('lm_manuf.list') }}">Производители</a>
+                                <a href="{{ route('lm_manuf_list') }}">Производители</a>
                             </li>
                             <li>
-                                <a href="{{ route('lm_country.list') }}">Страны</a>
+                                <a href="{{ route('lm_country_list') }}">Страны</a>
                             </li>
                             <li>
                                 <a href="#" onclick="return resetDatabase(event)">Откатить БД</a>

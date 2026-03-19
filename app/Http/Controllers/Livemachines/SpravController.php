@@ -14,7 +14,7 @@ class SpravController extends Controller {
 
     public function __construct() {
         $this->dbConnection = DB::connection('livemachines');
-        $this->techParam    = new TechParam([], $this->dbConnection);
+        $this->techParam    = new TechParam([], $this->dbConnection, 1);
     }
 
     /**
@@ -22,6 +22,7 @@ class SpravController extends Controller {
      */
     public function tech_list() {
         return view('livemachines/tech/list', [
+            'title'  => 'Справочник технических характеристик',
             'groups' => $this->techParam->get_groups(),
         ]);
     }
@@ -566,8 +567,7 @@ class SpravController extends Controller {
     /**
      * Список моделей
      */
-    public function model_list()
-    {
+    public function model_list() {
         $dbLm = DB::connection('livemachines');
         $sql =
         "
@@ -606,8 +606,7 @@ class SpravController extends Controller {
     /**
      * Список производителей
      */
-    public function manuf_list()
-    {
+    public function manuf_list() {
         $dbLm = DB::connection('livemachines');
         $sql =
         "
@@ -646,8 +645,7 @@ class SpravController extends Controller {
     /**
      * Список стран
      */
-    public function country_list()
-    {
+    public function country_list() {
         $dbLm = DB::connection('livemachines');
         $sql =
         "
@@ -681,37 +679,5 @@ class SpravController extends Controller {
             'description' => '',
             'data'        => $data,
         ]);
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
     }
 }

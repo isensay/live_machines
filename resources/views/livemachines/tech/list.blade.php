@@ -1,6 +1,6 @@
 @extends('layouts.base')
 
-@section('head_title', 'Справочник технических характеристик')
+@section('head_title', $title)
 
 {{-- Page Content --}}
 @section('page_content')
@@ -78,13 +78,13 @@
                                 <div class="card-body">
                                     <table id="basic-datatable" 
                                         class="table dt-responsive nowrap w-100"
-                                        data-url="{{ route('lm_tech.data') }}"
-                                        data-references-url="{{ route('lm_tech.references') }}"
-                                        data-update-url={{ route('lm_tech.update', ['id' => 'REPLACE_WITH_ID']) }}
-                                        data-delete-url={{ route('lm_sprav.tech_destroy', ['id' => 'REPLACE_WITH_ID']) }}
-                                        data-create-url="{{ route('lm_tech.create_data') }}"
-                                        data-group-create-url="{{ route('lm_tech.group.create') }}"
-                                        data-edit-url="{{ route('lm_tech.edit_data', ['id' => 'REPLACE_WITH_ID']) }}"
+                                        data-url="{{ route('lm_tech_data') }}"
+                                        data-references-url="{{ route('lm_tech_references') }}"
+                                        data-update-url={{ route('lm_tech_update', ['id' => 'REPLACE_WITH_ID']) }}
+                                        data-delete-url={{ route('lm_tech_destroy', ['id' => 'REPLACE_WITH_ID']) }}
+                                        data-create-url="{{ route('lm_tech_create_data') }}"
+                                        data-group-create-url="{{ route('lm_tech_group_create') }}"
+                                        data-edit-url="{{ route('lm_tech_edit_data', ['id' => 'REPLACE_WITH_ID']) }}"
                                     >
                                         <thead>
                                             <tr>

@@ -14,82 +14,80 @@ use Illuminate\Support\Facades\File;
 // Маршруты аутентификации (доступны без авторизации)
 require __DIR__.'/auth.php';
 
-Route::get("/json", [JsonController::class, "index"])->name("json");
+//Route::get("/json", [JsonController::class, "index"])->name("json");
 
 // Test Routes
-Route::prefix('tests')->group(function () {
-
-    // Главная страница со всеми тестами
-    Route::get('/', [TestController::class, 'index']);
-    
-    // Активные тесты
-    Route::get('/active', [TestController::class, 'activeTests']);
-    
-    // Поиск по имени
-    Route::get('/search', [TestController::class, 'searchByName']);
-    
-    // Recent tests (последние 7 дней)
-    Route::get('/recent', [TestController::class, 'recentTests']);
-    
-    // Первый тест
-    Route::get('/first', [TestController::class, 'firstTest']);
-    
-    // Создание нового теста
-    Route::get('/create', [TestController::class, 'createTest']);
-
-});
-
-
+//Route::prefix('tests')->group(function () {
+//
+//    // Главная страница со всеми тестами
+//    Route::get('/', [TestController::class, 'index']);
+//    
+//    // Активные тесты
+//    Route::get('/active', [TestController::class, 'activeTests']);
+//    
+//    // Поиск по имени
+//    Route::get('/search', [TestController::class, 'searchByName']);
+//    
+//    // Recent tests (последние 7 дней)
+//    Route::get('/recent', [TestController::class, 'recentTests']);
+//    
+//    // Первый тест
+//    Route::get('/first', [TestController::class, 'firstTest']);
+//    
+//    // Создание нового теста
+//    Route::get('/create', [TestController::class, 'createTest']);
+//
+//});
 
 
 
-Route::get('/test-encrypt', function () {
-    try {
-        $encrypted = encrypt('test');
-        $decrypted = decrypt($encrypted);
-        return [
-            'status' => 'ok',
-            'encryption_works' => ($decrypted === 'test'),
-            'app_key' => config('app.key') ? 'set' : 'not set',
-        ];
-    } catch (\Exception $e) {
-        return [
-            'status' => 'error',
-            'message' => $e->getMessage(),
-        ];
-    }
-});
+//Route::get('/test-encrypt', function () {
+//    try {
+//        $encrypted = encrypt('test');
+//        $decrypted = decrypt($encrypted);
+//        return [
+//            'status' => 'ok',
+//            'encryption_works' => ($decrypted === 'test'),
+//            'app_key' => config('app.key') ? 'set' : 'not set',
+//        ];
+//    } catch (\Exception $e) {
+//        return [
+//            'status' => 'error',
+//            'message' => $e->getMessage(),
+//        ];
+//    }
+//});
 
-Route::get('/test-session', function () {
-    try {
-        session(['test' => 'value']);
-        return [
-            'session_set' => true,
-            'session_get' => session('test'),
-            'session_driver' => config('session.driver'),
-        ];
-    } catch (\Exception $e) {
-        return [
-            'status' => 'error',
-            'message' => $e->getMessage(),
-        ];
-    }
-});
+//Route::get('/test-session', function () {
+//    try {
+//        session(['test' => 'value']);
+//        return [
+//            'session_set' => true,
+//            'session_get' => session('test'),
+//            'session_driver' => config('session.driver'),
+//        ];
+//    } catch (\Exception $e) {
+//        return [
+//            'status' => 'error',
+//            'message' => $e->getMessage(),
+//        ];
+//    }
+//});
 
-Route::get('/test-db', function () {
-    try {
-        $users = DB::table('users')->count();
-        return [
-            'status' => 'ok',
-            'users_count' => $users,
-        ];
-    } catch (\Exception $e) {
-        return [
-            'status' => 'error',
-            'message' => $e->getMessage(),
-        ];
-    }
-});
+//Route::get('/test-db', function () {
+//    try {
+//        $users = DB::table('users')->count();
+//        return [
+//            'status' => 'ok',
+//            'users_count' => $users,
+//        ];
+//    } catch (\Exception $e) {
+//        return [
+//            'status' => 'error',
+//            'message' => $e->getMessage(),
+//        ];
+//    }
+//});
 
 
 
@@ -122,12 +120,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name("dashboard");
     
     // Профиль
-    Route::get("/profile", function () {
-        return view("profile");
-    })->name("profile");
-    Route::get("/profile_new",    [ProfileController::class, "edit"])->name("profile.edit");
-    Route::patch("/profile_new",  [ProfileController::class, "update"])->name("profile.update");
-    Route::delete("/profile_new", [ProfileController::class, "destroy"])->name("profile.destroy");
+    //Route::get("/profile", function () {
+    //    return view("profile");
+    //})->name("profile");
+    //Route::get("/profile_new",    [ProfileController::class, "edit"])->name("profile.edit");
+    //Route::patch("/profile_new",  [ProfileController::class, "update"])->name("profile.update");
+    //Route::delete("/profile_new", [ProfileController::class, "destroy"])->name("profile.destroy");
     
     // Другие ваши маршруты
     Route::get("/logout", [HomeController::class, "index"])->name("logout");
@@ -141,78 +139,51 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name("comming_soon");
 
     // Отладка IP адреса пользователя
-    Route::get("/debug/ip", function (Illuminate\Http\Request $request) {
-        $trustedProxies = $request->getTrustedProxies();
-        echo "<h1>IP Detection Debug</h1>";
-        echo "<p><strong>Your Real IP should be visible below</strong></p>";
-        echo "<hr>";
-        echo "<p>Laravel request()->ip(): <strong style='color: blue; font-size: 1.2em;'>{$request->ip()}</strong></p>";
-        echo "<p>SERVER REMOTE_ADDR: " . ($_SERVER["REMOTE_ADDR"] ?? "N/A") . "</p>";
-        echo "<h3>All IP-related Headers:</h3>";
-        $ipHeaders = [
-            "HTTP_X_REAL_IP", "HTTP_X_FORWARDED_FOR", "HTTP_X_FORWARDED_HOST",
-            "HTTP_X_FORWARDED_PORT", "HTTP_X_FORWARDED_PROTO", "HTTP_CLIENT_IP", "HTTP_CF_CONNECTING_IP",
-        ];
-        foreach ($ipHeaders as $header) {
-            $value = $_SERVER[$header] ?? "Not set";
-            echo "<p>{$header}: {$value}</p>";
-        }
+    //Route::get("/debug/ip", function (Illuminate\Http\Request $request) {
+    //    $trustedProxies = $request->getTrustedProxies();
+    //    echo "<h1>IP Detection Debug</h1>";
+    //    echo "<p><strong>Your Real IP should be visible below</strong></p>";
+    //    echo "<hr>";
+    //    echo "<p>Laravel request()->ip(): <strong style='color: blue; font-size: 1.2em;'>{$request->ip()}</strong></p>";
+    //    echo "<p>SERVER REMOTE_ADDR: " . ($_SERVER["REMOTE_ADDR"] ?? "N/A") . "</p>";
+    //    echo "<h3>All IP-related Headers:</h3>";
+    //    $ipHeaders = [
+    //        "HTTP_X_REAL_IP", "HTTP_X_FORWARDED_FOR", "HTTP_X_FORWARDED_HOST",
+    //        "HTTP_X_FORWARDED_PORT", "HTTP_X_FORWARDED_PROTO", "HTTP_CLIENT_IP", "HTTP_CF_CONNECTING_IP",
+    //    ];
+    //    foreach ($ipHeaders as $header) {
+    //        $value = $_SERVER[$header] ?? "Not set";
+    //        echo "<p>{$header}: {$value}</p>";
+    //    }
+    //});
+
+    // Все маршруты справочников livemachines (для меню слева)
+    Route::prefix('livemachines/sprav')->name('lm_')->group(function () {
+        // Базовые справочники
+        Route::get('/manuf',   [SpravController::class, 'manuf_list'])->name('manuf_list');
+        Route::get('/country', [SpravController::class, 'country_list'])->name('country_list');
+        Route::get('/model',   [SpravController::class, 'model_list'])->name('model_list');
+        Route::get('/group',   [SpravController::class, 'group_list'])->name('group_list');
     });
 
-    Route::get('livemachines/sprav/manuf', [SpravController::class, 'manuf_list'])
-        ->name('lm_manuf.list');
-
-    Route::get('livemachines/sprav/country', [SpravController::class, 'country_list'])
-        ->name('lm_country.list');
-
-    Route::get('livemachines/sprav/model', [SpravController::class, 'model_list'])
-        ->name('lm_model.list');
-
-    Route::get('livemachines/sprav/tech', [SpravController::class, 'tech_list'])
-        ->name('lm_tech.list');
-    Route::get('livemachines/sprav/data', [SpravController::class, 'tech_data_ajax'])
-        ->name('lm_tech.data');
-    Route::delete('livemachines/sprav/{id}', [SpravController::class, 'tech_destroy'])
-        ->name('lm_sprav.tech_destroy')
-        ->whereNumber('id');
-
-
-    Route::get('livemachines/sprav/tech/edit/{id}', [SpravController::class, 'tech_edit_data'])
-        ->name('lm_tech.edit_data')
-        ->whereNumber('id');
-
-    Route::get('livemachines/sprav/tech/references', [SpravController::class, 'tech_get_references'])
-        ->name('lm_tech.references');
-
-    Route::post('livemachines/sprav/tech/update/{id}', [SpravController::class, 'tech_update'])
-        ->name('lm_tech.update')
-        ->whereNumber('id');
-
-    Route::get('livemachines/sprav/tech/create', [SpravController::class, 'tech_edit_data'])
-    ->name('lm_tech.create_data');
-
-    Route::post('livemachines/sprav/tech/create', [SpravController::class, 'tech_create'])
-    ->name('lm_tech.create');
-
-    Route::post('livemachines/sprav/tech/group/create', [App\Http\Controllers\Livemachines\SpravController::class, 'group_create'])
-        ->name('lm_tech.group.create');
+    // Все маршруты справочников livemachines (модули)
+    Route::prefix('livemachines/sprav')->name('lm_tech_')->group(function () {
+        // Технические характеристики
+        Route::prefix('tech')->group(function () {
+            Route::get('/',              [SpravController::class, 'tech_list'])->name('list');
+            Route::get('/data',          [SpravController::class, 'tech_data_ajax'])->name('data');
+            Route::get('/references',    [SpravController::class, 'tech_get_references'])->name('references');
+            Route::get('/create',        [SpravController::class, 'tech_edit_data'])->name('create_data');
+            Route::get('/edit/{id}',     [SpravController::class, 'tech_edit_data'])->name('edit_data')->whereNumber('id');
+            Route::post('/create',       [SpravController::class, 'tech_create'])->name('create');
+            Route::post('/update/{id}',  [SpravController::class, 'tech_update'])->name('update')->whereNumber('id');
+            Route::post('/group/create', [SpravController::class, 'group_create'])->name('group_create');
+            Route::delete('/{id}',       [SpravController::class, 'tech_destroy'])->name('destroy')->whereNumber('id');
+        });
+    });
 
 
-
-
-
-
-    Route::get('livemachines/sprav/group', [SpravController::class, 'group_list'])
-        ->name('lm_group.list');
-
-
-
-
-
-
-
-
-
+    // Откат базы данных livemachines
     Route::get('/livemachines/reset-database', function () {
         // Проверяем, AJAX ли это запрос
         $isAjax = request()->ajax() || request()->wantsJson();

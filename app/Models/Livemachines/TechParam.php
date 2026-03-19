@@ -14,13 +14,12 @@ class TechParam extends Model
     protected static $eventFired       = false; // Чтобы в профайлере не отображалось что модель подключена несколько раз из за $this->fireModelEvent()
     protected static $sharedConnection = null;  // Статическое свойство для хранения единого подключения
 
-    protected $paramTypeId = 1;
+    public $paramTypeId = 1;
 
     /**
      * Подключение к БД
      */
-    public function __construct(array $attributes = [], $connection = null)
-    {
+    public function __construct(array $attributes = [], $connection = null, $paramTypeId = -1) {
         parent::__construct($attributes);
         
         // Используем переданное соединение или создаем новое
@@ -32,14 +31,15 @@ class TechParam extends Model
             $this->fireModelEvent('retrieved', false);
             self::$eventFired = true;
         }
+
+        $this->paramTypeId = $paramTypeId;
     }
 
     /**
      * Получение списка всех групп технических характеристик
      * Получение списка всех групп технических характеристик к которым привязан указанный технический параметр
      */
-    public function get_groups($paramId = 0, $virtualItems = true)
-    {
+    public function get_groups($paramId = 0, $virtualItems = true) {
         if ($paramId > 0) {
             $sqlWhereParam = "AND `dirty_param_dirty_param_name_id` = " . $this->pdo->quote((int)$paramId);
             $sqlJoinParam  = "INNER JOIN `dirty_param` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_dirty_type_id` = `dirty_param_dirty_type_id` AND `dirty_param_remove_user_id` = 0)";
@@ -77,8 +77,7 @@ class TechParam extends Model
     /**
      * Получение списка всех файлов (источников)
      */
-    public function get_files()
-    {
+    public function get_files() {
         $sql = "
             SELECT
                 `dirty_file_id`   as `id`,
@@ -95,8 +94,7 @@ class TechParam extends Model
     /**
      * Получение списка файлов для конкретного параметра
      */
-    public function get_param_files($paramNameId, $additional)
-    {
+    public function get_param_files($paramNameId, $additional) {
         $sql = "
             SELECT DISTINCT
                 `dirty_file_id`   as `id`,
@@ -347,8 +345,7 @@ class TechParam extends Model
     /**
      * Получение значения checked для параметра
      */
-    public function get_param_checked($paramNameId)
-    {
+    public function get_param_checked($paramNameId) {
         $sql = "
             SELECT MAX(`dirty_param_checked`) as `dirty_param_checked`
             FROM `dirty_param`
