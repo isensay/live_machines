@@ -52,7 +52,7 @@ class SpravController extends Controller {
             ) as `tmp`
         ";
         $data = $dbLm->select($sql);
-        return view('livemachines/model/list', [
+        return view('livemachines/model', [
             'title'       => 'Список справочников - Adoxa',
             'description' => '',
             'data'        => $data,
@@ -91,7 +91,7 @@ class SpravController extends Controller {
             ) as `tmp`
         ";
         $data = $dbLm->select($sql);
-        return view('livemachines/manuf/list', [
+        return view('livemachines/manuf', [
             'title'       => 'Список справочников - Adoxa',
             'description' => '',
             'data'        => $data,
@@ -130,7 +130,7 @@ class SpravController extends Controller {
             ) as `tmp`
         ";
         $data = $dbLm->select($sql);
-        return view('livemachines/country/list', [
+        return view('livemachines/country', [
             'title'       => 'Список справочников - Adoxa',
             'description' => '',
             'data'        => $data,

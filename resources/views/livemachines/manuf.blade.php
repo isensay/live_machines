@@ -1,6 +1,6 @@
 @extends('layouts.base')
 
-@section('head_title', 'Справочник моделей')
+@section('head_title', 'Справочник производителей')
 
 {{-- Page Content --}}
 @section('page_content')
@@ -11,13 +11,13 @@
     <!-- start page title -->
     <div class="row" style1="position: static; top: 70px; z-index: 99;">
         <div class="col-12">
-            <div class="page-title-box">
+            <div class="page-title-box sticky">
                 <h4 class="page-title">
                     @yield('head_title')
                 </h4>
                 <div class="page-title-right">
                     <div class="page-title-right">
-                        <a href="{{-- route('livemachines.sprav.create') --}}" class="btn btn-success btn-rounded">
+                        <a href="#" class="btn btn-success btn-rounded">
                             <i class="mdi mdi-plus me-1"></i> Создать
                         </a>
                     </div>
@@ -58,7 +58,7 @@
                         <thead>
                             <tr>
                                 <th>Название</th>
-                                <th>Производителей</th>
+                                <th>Страна</th>
                                 <th>Файлов</th>
                                 <th></th>
                                 <th></th>
@@ -67,8 +67,8 @@
                         <tbody>
                             @foreach($data as $item)
                             <tr>
-                                <td style="text-align:left;">{{ $item->modelName }}</td>
-                                <td>{{ $item->manufCount }}</td>
+                                <td style="text-align:left;">{{ $item->manufName }}</td>
+                                <td>{{ $item->countryName }}</td>
                                 <td>{{ $item->fileCount }}</td>
                                 <td width="25">
                                     <a href="#" class="btn btn-success btn-sm btn-rounded" title="Редактировать">
@@ -141,7 +141,7 @@
         <script>
             $(document).ready(function () {
                 $("#basic-datatable").DataTable({
-                    paging: true,           // отключает пагинацию
+                    paging: false,           // отключает пагинацию
                     //info: false,             // отключает текст "Showing 1 to X of Y entries"
                     searching: true,         // поиск оставляем (можно отключить если нужно)
                     language: {

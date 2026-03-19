@@ -45,6 +45,7 @@
 
                     <div class="collapse" id="sidebarMultilevel_lm">
                         <ul class="nav-second-level">
+                            {{--
                             <li>
                                 <a href="#">Группы параметров</a>
                             </li>
@@ -54,6 +55,7 @@
                             <li>
                                 <a href="#">Значения</a>
                             </li>
+                            --}}
                             <li>
                                 <a href="{{ route('lm_tech_list') }}">Тех. характеристики</a>
                             </li>
