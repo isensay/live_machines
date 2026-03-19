@@ -47,6 +47,13 @@ class ParamModel extends Model
             $sqlJoinParam  = "";
         }
 
+        if ($virtualItems) {
+            $sqlVirtualItems = "UNION (SELECT 'groupandno' as `id`, '- С группой и без -' as `name`)";
+            $sqlJoinParam    = "INNER JOIN `dirty_param` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_dirty_type_id` = `dirty_param_dirty_type_id` AND `dirty_param_remove_user_id` = 0)";
+        } else {
+            $sqlVirtualItems = "";
+        }
+
         $sqlVirtualItems = ($virtualItems === true) ? "UNION (SELECT 'groupandno' as `id`, '- С группой и без -' as `name`)" : "";
 
         $baseSql = "
