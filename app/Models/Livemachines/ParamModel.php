@@ -6,15 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class TechParam extends Model
+class ParamModel extends Model
 {
     protected $db;
     protected $pdo;
 
-    protected static $eventFired       = false; // Чтобы в профайлере не отображалось что модель подключена несколько раз из за $this->fireModelEvent()
-    protected static $sharedConnection = null;  // Статическое свойство для хранения единого подключения
+    protected static $eventFired = false; // Чтобы в профайлере не отображалось что модель подключена несколько раз из за $this->fireModelEvent()
 
-    public $paramTypeId = 1;
+    protected $paramTypeId;
 
     /**
      * Подключение к БД
@@ -193,7 +192,7 @@ class TechParam extends Model
             FROM `dirty_param_name`
                 LEFT JOIN `dirty_param` ON (1
                     AND `dirty_param_name_id`        = `dirty_param_dirty_param_name_id` 
-                    AND `dirty_param_dirty_type_id`  = `dirty_param_name_dirty_type_id` 
+                    AND `dirty_param_dirty_type_id`  = {$this->paramTypeId}
                     AND `dirty_param_remove_user_id` = 0
                 )
                 INNER JOIN `dirty_file` ON (`dirty_file_id` = `dirty_param_dirty_file_id` AND `dirty_file_remove_user_id` = 0)
@@ -325,8 +324,8 @@ class TechParam extends Model
                 `dirty_param_dirty_file_id` as `file_id`,
                 `dirty_file_name` as `file_name`
             FROM `dirty_param`
-                LEFT JOIN `dirty_param_unit`  ON (`dirty_param_unit_id`  = `dirty_param_dirty_param_unit_id`  AND `dirty_param_unit_dirty_type_id`  = `dirty_param_dirty_type_id` AND `dirty_param_unit_remove_user_id`  = 0)
-                LEFT JOIN `dirty_param_value` ON (`dirty_param_value_id` = `dirty_param_dirty_param_value_id` AND `dirty_param_value_dirty_type_id` = `dirty_param_dirty_type_id` AND `dirty_param_value_remove_user_id` = 0)
+                LEFT JOIN `dirty_param_unit`  ON (`dirty_param_unit_id`  = `dirty_param_dirty_param_unit_id`  AND `dirty_param_unit_dirty_type_id`  = {$this->paramTypeId} AND `dirty_param_unit_remove_user_id`  = 0)
+                LEFT JOIN `dirty_param_value` ON (`dirty_param_value_id` = `dirty_param_dirty_param_value_id` AND `dirty_param_value_dirty_type_id` = {$this->paramTypeId} AND `dirty_param_value_remove_user_id` = 0)
                 LEFT JOIN `dirty_file` ON (`dirty_file_id` = `dirty_param_dirty_file_id` AND `dirty_file_remove_user_id` = 0)
             WHERE 1
                 AND `dirty_param_dirty_param_name_id` = ?
@@ -370,7 +369,7 @@ class TechParam extends Model
                 `dirty_param_dirty_file_id`  as `file_id`,
                 `dirty_file_name`            as `file_name`
             FROM `dirty_param`
-                LEFT JOIN `dirty_group` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_dirty_type_id` = `dirty_param_dirty_type_id` AND `dirty_group_remove_user_id` = 0)
+                LEFT JOIN `dirty_group` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_dirty_type_id` = {$this->paramTypeId} AND `dirty_group_remove_user_id` = 0)
                 INNER JOIN `dirty_file` ON (`dirty_file_id`  = `dirty_param_dirty_file_id`  AND `dirty_file_remove_user_id` = 0)
             WHERE 1
                 AND `dirty_param_dirty_param_name_id` = ?
@@ -578,6 +577,55 @@ class TechParam extends Model
             Log::error('Error updating param: ' . $e->getMessage());
             $this->db->rollBack();
             return $e->getMessage();
+        }
+    }
+
+    /**
+     * Удаление параметра
+     */
+    public function remove($paramNameId) {
+        try {
+            // Начинаем транзакцию
+            $this->db->beginTransaction();
+
+            $sql =
+            "
+            SELECT
+                `dirty_param_name_id`    as `paramNameId`,
+                `dirty_param_name_value` as `paramName`,
+                GROUP_CONCAT(DISTINCT `dirty_file_id`) as `fileIds`
+            FROM `dirty_param_name`
+                LEFT JOIN `dirty_param` ON (`dirty_param_name_id` = `dirty_param_dirty_param_name_id` AND `dirty_param_dirty_type_id` = `dirty_param_name_dirty_type_id` AND `dirty_param_remove_user_id` = 0)
+                LEFT JOIN `dirty_file`  ON (`dirty_file_id`       = `dirty_param_dirty_file_id`)
+            WHERE 1
+                AND `dirty_param_name_id` = ?
+                AND `dirty_param_name_dirty_type_id` = {$this->paramTypeId}
+                AND (dirty_file_id IS NULL OR `dirty_file_remove_user_id` = 0)
+            ";
+            
+            $record = $this->db->selectOne($sql, [$paramNameId]);
+            
+            if (!$record) return 'Запись не найдена';
+
+            $fileIds = isset($record->fileIds) ? $record->fileIds : "";
+
+            if ($fileIds == "") return true;
+
+            $updated = $this->db->update("UPDATE `dirty_file` SET `dirty_file_remove_user_id` = ?, `dirty_file_remove_date` = UNIX_TIMESTAMP() WHERE `dirty_file_id` IN ({$fileIds})", [auth()->id()]);
+            
+            if ($updated)
+            {
+                $this->db->commit();
+                return true;
+            }
+            
+            $this->db->rollBack();
+
+            return 'Ошибка при удалении';
+        } catch (\Exception $e) {
+            Log::error('Delete error: '.$e->getMessage());
+
+            return 'Ошибка: '.$e->getMessage();
         }
     }
 

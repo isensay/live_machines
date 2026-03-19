@@ -58,7 +58,7 @@
                                 <a href="{{ route('lm_tech_list') }}">Тех. характеристики</a>
                             </li>
                             <li>
-                                <a href="#">Комплектации</a>
+                                <a href="{{ route('lm_comp_list') }}">Комплектации</a>
                             </li>
                             <li>
                                 <a href="{{ route('lm_model_list') }}">Модели</a>

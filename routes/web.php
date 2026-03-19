@@ -6,10 +6,12 @@ use App\Http\Controllers\LocalizationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\JsonController;
 use Illuminate\Http\Request;
-use App\Http\Controllers\TestController;
-use App\Http\Controllers\Livemachines\SpravController;
+//use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use App\Http\Controllers\Livemachines\TechController;
+use App\Http\Controllers\Livemachines\CompController;
+use App\Http\Controllers\Livemachines\SpravController;
 
 // Маршруты аутентификации (доступны без авторизации)
 require __DIR__.'/auth.php';
@@ -170,17 +172,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('livemachines/sprav')->name('lm_tech_')->group(function () {
         // Технические характеристики
         Route::prefix('tech')->group(function () {
-            Route::get('/',              [SpravController::class, 'tech_list'])->name('list');
-            Route::get('/data',          [SpravController::class, 'tech_data_ajax'])->name('data');
-            Route::get('/references',    [SpravController::class, 'tech_get_references'])->name('references');
-            Route::get('/create',        [SpravController::class, 'tech_edit_data'])->name('create_data');
-            Route::get('/edit/{id}',     [SpravController::class, 'tech_edit_data'])->name('edit_data')->whereNumber('id');
-            Route::post('/create',       [SpravController::class, 'tech_create'])->name('create');
-            Route::post('/update/{id}',  [SpravController::class, 'tech_update'])->name('update')->whereNumber('id');
-            Route::post('/group/create', [SpravController::class, 'group_create'])->name('group_create');
-            Route::delete('/{id}',       [SpravController::class, 'tech_destroy'])->name('destroy')->whereNumber('id');
+            Route::get('/',              [TechController::class, 'list'])->name('list');
+            Route::get('/data',          [TechController::class, 'data_ajax'])->name('data');
+            Route::get('/references',    [TechController::class, 'get_references'])->name('references');
+            Route::get('/create',        [TechController::class, 'edit_data'])->name('create_data');
+            Route::get('/edit/{id}',     [TechController::class, 'edit_data'])->name('edit_data')->whereNumber('id');
+            Route::post('/create',       [TechController::class, 'create'])->name('create');
+            Route::post('/update/{id}',  [TechController::class, 'update'])->name('update')->whereNumber('id');
+            Route::post('/group/create', [TechController::class, 'group_create'])->name('group_create');
+            Route::delete('/{id}',       [TechController::class, 'destroy'])->name('destroy')->whereNumber('id');
         });
     });
+
+    // Все маршруты справочников livemachines (модули)
+    Route::prefix('livemachines/sprav')->name('lm_comp_')->group(function () {
+        // Технические характеристики
+        Route::prefix('comp')->group(function () {
+            Route::get('/',              [CompController::class, 'list'])->name('list');
+            Route::get('/data',          [CompController::class, 'data_ajax'])->name('data');
+            Route::get('/references',    [CompController::class, 'get_references'])->name('references');
+            Route::get('/create',        [CompController::class, 'edit_data'])->name('create_data');
+            Route::get('/edit/{id}',     [CompController::class, 'edit_data'])->name('edit_data')->whereNumber('id');
+            Route::post('/create',       [CompController::class, 'create'])->name('create');
+            Route::post('/update/{id}',  [CompController::class, 'update'])->name('update')->whereNumber('id');
+            Route::post('/group/create', [CompController::class, 'group_create'])->name('group_create');
+            Route::delete('/{id}',       [CompController::class, 'destroy'])->name('destroy')->whereNumber('id');
+        });
+    });
+
+
 
 
     // Откат базы данных livemachines

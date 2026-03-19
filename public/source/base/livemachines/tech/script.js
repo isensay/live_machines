@@ -144,8 +144,11 @@ $(document).ready(function() {
     
     // ===== SELECT2 ДЛЯ ФИЛЬТРОВ =====
     function initSelect2() {
-        $('#group-select2').select2({ minimumInputLength: 0, language: 'ru' });
+        $('#group-select2').select2({minimumInputLength: 0, language: 'ru'});
         $('#additional-select2').select2({ minimumInputLength: 0, language: 'ru' });
+        $('#group-select2, #additional-select2').on('select2:open', function() {
+            $('.select2-dropdown').css('z-index', '10');
+        });
     }
     
     // ===== DATATABLE В РЕЖИМЕ SERVER-SIDE =====
