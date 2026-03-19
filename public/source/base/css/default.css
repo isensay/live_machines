@@ -25,10 +25,6 @@ h4 span.title-default {
     top:50%;
 }
 
-
-
-
-
 /* ===== АНИМАЦИИ ДЛЯ TOAST ===== */
 @keyframes slideInRight {
     from {
@@ -58,7 +54,6 @@ h4 span.title-default {
     font-size: 0.85rem !important;
     min-width: auto !important;
     max-width: 280px !important;
-    zborder-radius: 30px !important; /* Скругленные края как у современных toast */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
     background: rgba(40, 167, 69, 0.95) !important; /* Полупрозрачный зеленый */
     backdrop-filter: blur(4px) !important; /* Эффект размытия фона */
@@ -73,8 +68,6 @@ h4 span.title-default {
     .compact-toast {
         max-width: 200px !important;
         font-size: 0.8rem !important;
-        zpadding: 6px 12px !important;
-        zborder-radius: 20px !important;
     }
 }
 
