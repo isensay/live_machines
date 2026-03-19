@@ -24,7 +24,7 @@ class CompController extends Controller {
      * Страница с техническими характеристиками
      */
     public function list() {
-        return view('livemachines/comp/list', [
+        return view('livemachines/comp', [
             'title'  => 'Справочник комплектаций',
             'groups' => $this->paramModel->get_groups(),
         ]);

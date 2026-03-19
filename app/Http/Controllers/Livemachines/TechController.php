@@ -24,7 +24,7 @@ class TechController extends Controller {
      * Страница с техническими характеристиками
      */
     public function list() {
-        return view('livemachines/tech/list', [
+        return view('livemachines/tech', [
             'title'  => 'Справочник технических характеристик',
             'groups' => $this->paramModel->get_groups(),
         ]);
