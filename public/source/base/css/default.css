@@ -24,3 +24,80 @@ h4 span.title-default {
     right:0;
     top:50%;
 }
+
+
+
+
+
+/* ===== АНИМАЦИИ ДЛЯ TOAST ===== */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+/* ===== КОМПАКТНЫЙ TOAST ===== */
+.compact-toast {
+    padding: 8px 16px !important;
+    font-size: 0.85rem !important;
+    min-width: auto !important;
+    max-width: 280px !important;
+    zborder-radius: 30px !important; /* Скругленные края как у современных toast */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    background: rgba(40, 167, 69, 0.95) !important; /* Полупрозрачный зеленый */
+    backdrop-filter: blur(4px) !important; /* Эффект размытия фона */
+    color: white !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.3px !important;
+    border-left: 4px solid #1e7e34 !important; /* Акцентная полоска слева */
+}
+
+/* Для мобильных устройств */
+@media (max-width: 768px) {
+    .compact-toast {
+        max-width: 200px !important;
+        font-size: 0.8rem !important;
+        zpadding: 6px 12px !important;
+        zborder-radius: 20px !important;
+    }
+}
+
+/* Иконка в toast (опционально) */
+.compact-toast .swal2-icon {
+    font-size: 0.8rem !important;
+    width: 1.5em !important;
+    height: 1.5em !important;
+    margin-right: 6px !important;
+}
+
+.compact-toast .swal2-icon-success {
+    border-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.compact-toast .swal2-icon-success [class^=swal2-success-line] {
+    background-color: white !important;
+}
+
+.compact-toast .swal2-title {
+    color: white !important;
+    font-size: 0.85rem !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-weight: 500 !important;
+}

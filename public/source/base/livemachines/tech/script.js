@@ -1261,4 +1261,108 @@ $(document).ready(function() {
             }
         });
     });
+
+    // ===== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ КОПИРОВАНИЯ =====
+    function copyToClipboard(text, message) {
+        // Используем современный API clipboard
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Показываем всплывающее уведомление (опционально)
+                showCopyNotification(message);
+            }).catch(err => {
+                console.error('Ошибка копирования: ', err);
+                fallbackCopyToClipboard(text, message);
+            });
+        } else {
+            fallbackCopyToClipboard(text, message);
+        }
+    }
+
+    // ===== ЗАПАСНОЙ МЕТОД ДЛЯ СТАРЫХ БРАУЗЕРОВ =====
+    function fallbackCopyToClipboard(text, message) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        
+        try {
+            document.execCommand('copy');
+            showCopyNotification(message);
+        } catch (err) {
+            console.error('Ошибка копирования (fallback): ', err);
+            // Если даже fallback не сработал, показываем сообщение с текстом для ручного копирования
+            Swal.fire({
+                title: 'Не удалось скопировать',
+                text: text,
+                icon: 'info',
+                timer: 3000,
+                showConfirmButton: true
+            });
+        }
+        
+        document.body.removeChild(textarea);
+    }
+
+    // ===== УВЕДОМЛЕНИЕ О КОПИРОВАНИИ =====
+    function showCopyNotification(message) {
+        // Проверяем, определен ли Toast (из SweetAlert2)
+        if (typeof Toast !== 'undefined') {
+            Toast.fire({
+                icon: 'success',
+                title: message,
+                timer: 1500
+            });
+        } else {
+            // Если Toast не определен, используем стандартный Swal
+            Swal.fire({
+                title: message,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+    }
+
+    // ===== УЛУЧШЕННЫЙ TOAST С ПЛАВНЫМИ АНИМАЦИЯМИ =====
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1200, // Немного уменьшил время
+        timerProgressBar: false, // Убрал прогресс-бар для минимализма
+        customClass: {
+            popup: 'animated-toast compact-toast'
+        },
+        didOpen: (toast) => {
+            // Добавляем плавное появление
+            toast.style.animation = 'slideInRight 0.3s ease';
+            
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        },
+        willClose: (toast) => {
+            // Добавляем плавное исчезновение
+            toast.style.animation = 'fadeOut 0.2s ease';
+        }
+    });
+
+    // ===== КОПИРОВАНИЕ ЗНАЧЕНИЯ ГРУППЫ ПРИ ДВОЙНОМ КЛИКЕ =====
+    $(document).on('dblclick', '.group-select + .select2-container .select2-selection__rendered', function() {
+        // Получаем текст из элемента
+        const groupText = $(this).text().trim();
+        
+        // Игнорируем плейсхолдер
+        if (groupText === 'Выберите группу' || groupText === '') {
+            return;
+        }
+        
+        // Копируем в буфер обмена
+        copyToClipboard(groupText, 'Группа скопирована в буфер обмена');
+    });
+
+    
 });

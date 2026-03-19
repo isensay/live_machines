@@ -295,6 +295,21 @@ class SpravController extends Controller {
             $paramInfo = $this->techParam->get_info_from_id($paramNameId);
             $newParamNameId = $paramNameId;
             if (!$paramInfo) return 'Параметр не найден';
+
+            // Редактирование существующего параметра
+            $paramInfo = $this->techParam->get_info_from_id($paramNameId);
+            if (!$paramInfo) return 'Параметр не найден';
+            
+            // Проверяем, не занято ли новое название другим параметром
+            $existingParam = $this->techParam->get_info_from_name($paramName, false);
+            
+            if ($existingParam && $existingParam->id != $paramNameId) {
+                // Название уже принадлежит другому параметру - объединяем
+                $newParamNameId = $existingParam->id;
+            } else {
+                // Название свободно или принадлежит текущему параметру
+                $newParamNameId = $paramNameId;
+            }
         } else {
             $paramInfo      = $this->techParam->get_info_from_name($paramName, true);
             $paramNameId    = $paramInfo->id;
