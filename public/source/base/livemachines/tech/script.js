@@ -45,7 +45,7 @@ $(document).ready(function() {
         
         // Используем специальный URL для создания с параметром new=true
         $.ajax({
-            url: '/livemachines/sprav/tech/create?additional=' + additionalValue + '&new=true',
+            url: createUrl + '?additional=' + additionalValue + '&new=true',
             type: 'GET',
             success: (response) => {
                 Swal.close();
@@ -121,17 +121,20 @@ $(document).ready(function() {
 
     // ===== ИНИЦИАЛИЗАЦИЯ =====
     let table;
-    const references = { groups: [], units: [], files: [] };
+    const references     = { groups: [], units: [], files: [] };
     let referencesLoaded = false;
     
-    const csrfToken = $('meta[name="csrf-token"]').attr('content');
+    const csrfToken      = $('meta[name="csrf-token"]').attr('content');
     
-    const $table = $('#basic-datatable');
-    const dataUrl = $table.data('url');
-    const referencesUrl = $table.data('references-url');
-    const updateUrl = $table.data('update-url');
-    const deleteUrl = $table.data('delete-url');
-    const editUrl = $table.data('edit-url');
+    const $table         = $('#basic-datatable');
+    const dataUrl        = $table.data('url');
+    const referencesUrl  = $table.data('references-url');
+    const updateUrl      = $table.data('update-url');
+    const deleteUrl      = $table.data('delete-url');
+    const editUrl        = $table.data('edit-url');
+
+    const createUrl      = $table.data('create-url');
+    const groupCreateUrl = $table.data('group-create-url');
     
     initSelect2();
     initDataTable();
@@ -312,6 +315,9 @@ $(document).ready(function() {
         e.preventDefault();
         const id = $(this).data('id');
         
+        // Формируем URL здесь, где id определен
+        const editUrl = $table.data('edit-url').replace('REPLACE_WITH_ID', id);
+        
         const additionalValue = $('#additional-select2').val();
         
         if (!referencesLoaded) {
@@ -328,16 +334,16 @@ $(document).ready(function() {
                 if (referencesLoaded) {
                     clearInterval(checkInterval);
                     Swal.close();
-                    loadEditData(id, additionalValue);
+                    loadEditData(id, additionalValue, editUrl); // Передаем editUrl
                 }
             }, 100);
         } else {
-            loadEditData(id, additionalValue);
+            loadEditData(id, additionalValue, editUrl); // Передаем editUrl
         }
     });
 
     // ===== ЗАГРУЗКА ДАННЫХ ДЛЯ РЕДАКТИРОВАНИЯ =====
-    function loadEditData(id, additionalValue) {
+    function loadEditData(id, additionalValue, editUrl) {
         Swal.fire({ 
             title: 'Загрузка...', 
             html: 'Загружаем данные параметра', 
@@ -350,7 +356,7 @@ $(document).ready(function() {
         $('#editParamModalLabel i').attr('class', 'mdi mdi-pencil-circle');
         
         $.ajax({
-            url: editUrl + id + '?additional=' + additionalValue,
+            url: editUrl + '?additional=' + additionalValue, // Используем переданный editUrl
             type: 'GET',
             success: (response) => {
                 Swal.close();
@@ -984,7 +990,7 @@ $(document).ready(function() {
         $btn.html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
         
         $.ajax({
-            url: '/livemachines/sprav/tech/group/create',
+            url: groupCreateUrl,
             type: 'POST',
             data: {
                 '_token': csrfToken,
@@ -1216,7 +1222,7 @@ $(document).ready(function() {
         let saveUrl;
         if (!id) {
             // Новый параметр
-            saveUrl = '/livemachines/sprav/tech/create';
+            saveUrl = createUrl;
         } else {
             // Существующий параметр
             saveUrl = updateUrl + id;

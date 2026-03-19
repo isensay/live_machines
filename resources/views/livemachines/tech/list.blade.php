@@ -82,7 +82,10 @@
                                         data-references-url="{{ route('lm_tech.references') }}"
                                         data-update-url="/livemachines/sprav/tech/update/"
                                         data-delete-url="/livemachines/sprav/"
-                                        data-edit-url="/livemachines/sprav/tech/edit/">
+                                        data-create-url="{{ route('lm_tech.create_data') }}"
+                                        data-group-create-url="{{ route('lm_tech.group.create') }}"
+                                        data-edit-url="{{ route('lm_tech.edit_data', ['id' => 'REPLACE_WITH_ID']) }}"
+                                        >
                                         <thead>
                                             <tr>
                                                 <th>Название</th>
