@@ -80,12 +80,12 @@
                                         class="table dt-responsive nowrap w-100"
                                         data-url="{{ route('lm_tech.data') }}"
                                         data-references-url="{{ route('lm_tech.references') }}"
-                                        data-update-url="/livemachines/sprav/tech/update/"
-                                        data-delete-url="/livemachines/sprav/"
+                                        data-update-url={{ route('lm_tech.update', ['id' => 'REPLACE_WITH_ID']) }}
+                                        data-delete-url={{ route('lm_sprav.tech_destroy', ['id' => 'REPLACE_WITH_ID']) }}
                                         data-create-url="{{ route('lm_tech.create_data') }}"
                                         data-group-create-url="{{ route('lm_tech.group.create') }}"
                                         data-edit-url="{{ route('lm_tech.edit_data', ['id' => 'REPLACE_WITH_ID']) }}"
-                                        >
+                                    >
                                         <thead>
                                             <tr>
                                                 <th>Название</th>

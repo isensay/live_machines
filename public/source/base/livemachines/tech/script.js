@@ -128,14 +128,16 @@ $(document).ready(function() {
     
     const $table         = $('#basic-datatable');
     const dataUrl        = $table.data('url');
-    const referencesUrl  = $table.data('references-url');
-    const updateUrl      = $table.data('update-url');
-    const deleteUrl      = $table.data('delete-url');
-    const editUrl        = $table.data('edit-url');
 
+    const referencesUrl  = $table.data('references-url');
     const createUrl      = $table.data('create-url');
+    const editUrl        = $table.data('edit-url');
+    const updateUrl      = $table.data('update-url').replace('REPLACE_WITH_ID', '');
+    const deleteUrl      = $table.data('delete-url').replace('REPLACE_WITH_ID', '');
+
     const groupCreateUrl = $table.data('group-create-url');
-    
+
+    //replace('REPLACE_WITH_ID', id)
     initSelect2();
     initDataTable();
     loadReferences();
@@ -1086,8 +1088,8 @@ $(document).ready(function() {
             });
         }
 
-        console.log('=== НАЧАЛО СБОРА ДАННЫХ ===');
-        console.log('Всего строк групп:', $('.group-link-row').length);
+        //console.log('=== НАЧАЛО СБОРА ДАННЫХ ===');
+        //console.log('Всего строк групп:', $('.group-link-row').length);
 
         // Собираем все привязки к группам с param_id
         $('.group-link-row').each(function(index) {
@@ -1102,15 +1104,15 @@ $(document).ready(function() {
             if (rowId && rowId.startsWith('new_param_')) {
                 // Новая запись - используем new_param_X
                 paramId = rowId;
-                console.log(`Строка групп ${index}: НОВАЯ запись, param_id =`, paramId);
+                //console.log(`Строка групп ${index}: НОВАЯ запись, param_id =`, paramId);
             } else if (rowId && rowId.startsWith('param_')) {
                 // Существующая запись - используем param_X (где X - dirty_param_id)
                 paramId = rowId;
-                console.log(`Строка групп ${index}: СУЩЕСТВУЮЩАЯ запись, param_id =`, paramId);
+                //console.log(`Строка групп ${index}: СУЩЕСТВУЮЩАЯ запись, param_id =`, paramId);
             } else {
                 // Fallback - используем ID параметра
                 paramId = 'param_' + $('#edit_param_id').val();
-                console.log(`Строка групп ${index}: FALLBACK, param_id =`, paramId);
+                //console.log(`Строка групп ${index}: FALLBACK, param_id =`, paramId);
             }
             
             // Определяем group_id - ТОЛЬКО из select (актуальное значение)
@@ -1140,11 +1142,11 @@ $(document).ready(function() {
                     group_id: groupId,
                     file_id: fileId
                 });
-                console.log(`Строка групп ${index}: ДОБАВЛЕНО →`, { param_id: paramId, group_id: groupId, file_id: fileId });
+                //console.log(`Строка групп ${index}: ДОБАВЛЕНО →`, { param_id: paramId, group_id: groupId, file_id: fileId });
             }
         });
 
-        console.log('ИТОГОВЫЙ group_links:', formData.group_links);
+        //('ИТОГОВЫЙ group_links:', formData.group_links);
         
         // Собираем ВСЕ значения с param_id
         $('.value-row').each(function(index) {
@@ -1184,13 +1186,13 @@ $(document).ready(function() {
                     is_existing: true,
                     value_id: valueId
                 });
-                console.log(`Строка значений ${index}: ДОБАВЛЕНО существующая →`, { 
-                    param_id: paramId, 
-                    unit_id: unitId || 0, 
-                    file_id: fileId || 0, 
-                    value: value,
-                    value_id: valueId
-                });
+                //console.log(`Строка значений ${index}: ДОБАВЛЕНО существующая →`, { 
+                //    param_id: paramId, 
+                //    unit_id: unitId || 0, 
+                //    file_id: fileId || 0, 
+                //    value: value,
+                //    value_id: valueId
+                //});
             } else {
                 unitId = $row.find('.unit-select').val();
                 fileId = $row.find('.file-select').val();
@@ -1204,17 +1206,17 @@ $(document).ready(function() {
                         value: value,
                         is_existing: false
                     });
-                    console.log(`Строка значений ${index}: ДОБАВЛЕНО новая →`, { 
-                        param_id: paramId, 
-                        unit_id: unitId || 0, 
-                        file_id: fileId || 0, 
-                        value: value 
-                    });
+                    //console.log(`Строка значений ${index}: ДОБАВЛЕНО новая →`, { 
+                    //    param_id: paramId, 
+                    //    unit_id: unitId || 0, 
+                    //    file_id: fileId || 0, 
+                    //    value: value 
+                    //});
                 }
             }
         });
         
-        console.log('ИТОГОВЫЙ values:', formData.values);
+        //console.log('ИТОГОВЫЙ values:', formData.values);
         
         const id = $('#edit_param_id').val();
 
