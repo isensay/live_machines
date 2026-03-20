@@ -69,8 +69,13 @@
                                 <a href="{{ route('lm_manuf_list') }}">Производители</a>
                             </li>
                             <li>
-                                <a href="{{ route('lm_country_list') }}">Страны</a>
+                                <a href="{{ route('lm_country_index') }}">Страны</a>
                             </li>
+                            {{--
+                            <li>
+                                <a href="{{ route('lm_country_list_old') }}">Страны (old)</a>
+                            </li>
+                            --}}
                             <li>
                                 <a href="#" onclick="return resetDatabase(event)">Откатить БД</a>
                             </li>
