@@ -321,7 +321,7 @@
     <link href="/source/base/libs/datatables.net-select-bs5/css/select.bootstrap5.min.css" rel="stylesheet" type="text/css" />
     <link href="/source/base/libs/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
     <link href="/source/base/libs/sweetalert2/sweetalert2.min.css" rel="stylesheet" type="text/css" />
-    <link href="/source/base/livemachines/tech/style.css?<?=time()?>" rel="stylesheet" type="text/css" />
+    <link href="/source/base/livemachines/param/style.css?<?=time()?>" rel="stylesheet" type="text/css" />
 @endsection
 
 @section('page_more_java_script')
@@ -330,5 +330,5 @@
     <script src="/source/base/libs/select2/js/select2.min.js"></script>
     <script src="/source/base/libs/select2/js/i18n/ru.js"></script>
     <script src="/source/base/libs/sweetalert2/sweetalert2.min.js"></script>
-    <script src="/source/base/livemachines/tech/script.js?<?=time()?>"></script>
+    <script src="/source/base/livemachines/param/script.js?<?=time()?>"></script>
 @endsection

@@ -54,8 +54,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Страны
     Route::prefix('livemachines/sprav')->name('lm_country_')->group(function () {
-        Route::get('/country',     [CountryController::class, 'index'])->name('index');
-        Route::get('/country_old', [SpravController::class,   'country_list'])->name('index_old');
+        Route::prefix('country')->group(function () {
+            Route::get('/',             [CountryController::class, 'index'])->name('index');
+            Route::get('/data',         [CountryController::class, 'data_ajax'])->name('data');
+            Route::get('/edit/{id}',    [CountryController::class, 'edit_data'])->name('edit')->whereNumber('id');
+            Route::post('/update/{id}', [CountryController::class, 'update'])->name('update')->whereNumber('id');
+            Route::delete('/{id}',      [CountryController::class, 'destroy'])->name('destroy')->whereNumber('id');
+        });
     });
 
     // Откат базы данных livemachines
