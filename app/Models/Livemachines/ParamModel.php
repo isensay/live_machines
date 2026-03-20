@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Модель для работы со справочниками параметров, ед.измерения и значений технических характеристик и комплектаций
+ * $paramTypeId: 1 - технические характеристики; 2 - комплектации
+ */
+
 namespace App\Models\Livemachines;
 
 use Illuminate\Database\Eloquent\Model;
@@ -10,10 +15,9 @@ class ParamModel extends Model
 {
     protected $db;
     protected $pdo;
-
-    protected static $eventFired = false; // Чтобы в профайлере не отображалось что модель подключена несколько раз из за $this->fireModelEvent()
-
     protected $paramTypeId;
+
+    protected static $eventFired = false; // Чтобы в профайлере не отображалось, что модель подключена несколько раз из за $this->fireModelEvent()
 
     /**
      * Подключение к БД
@@ -32,52 +36,6 @@ class ParamModel extends Model
         }
 
         $this->paramTypeId = $paramTypeId;
-    }
-
-    /**
-     * Получение списка всех групп технических характеристик
-     * Получение списка всех групп технических характеристик к которым привязан указанный технический параметр
-     */
-    public function get_groups($paramId = 0, $virtualItems = true) {
-        if ($paramId > 0) {
-            $sqlWhereParam = "AND `dirty_param_dirty_param_name_id` = " . $this->pdo->quote((int)$paramId);
-            $sqlJoinParam  = "INNER JOIN `dirty_param` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_dirty_type_id` = `dirty_param_dirty_type_id` AND `dirty_param_remove_user_id` = 0)";
-        } else {
-            $sqlWhereParam = "";
-            $sqlJoinParam  = "";
-        }
-
-        if ($virtualItems) {
-            $sqlVirtualItems = "UNION (SELECT 'groupandno' as `id`, '- С группой и без -' as `name`)";
-            $sqlJoinParam    = "INNER JOIN `dirty_param` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_dirty_type_id` = `dirty_param_dirty_type_id` AND `dirty_param_remove_user_id` = 0)";
-        } else {
-            $sqlVirtualItems = "";
-        }
-
-        $sqlVirtualItems = ($virtualItems === true) ? "UNION (SELECT 'groupandno' as `id`, '- С группой и без -' as `name`)" : "";
-
-        $baseSql = "
-            (SELECT 'none' as `id`, '- Без группы -' as `name`)
-            {$sqlVirtualItems}
-            UNION
-            (
-                SELECT
-                    `dirty_group_id`   as `id`,
-                    `dirty_group_name` as `name`
-                FROM `dirty_group`
-                    {$sqlJoinParam}
-                WHERE 1
-                    {$sqlWhereParam}
-                    AND `dirty_group_dirty_type_id`  = {$this->paramTypeId}
-                    AND `dirty_group_remove_user_id` = 0
-                GROUP BY
-                    `id`
-                ORDER BY
-                    `name` ASC
-            ) 
-        ";
-
-        return $this->db->select($baseSql);
     }
 
     /**
@@ -121,16 +79,7 @@ class ParamModel extends Model
     /**
      * Получение списка технических характеристик
      */
-    public function get_list(
-        $groupId,
-        $additional,
-        $start,
-        $length,
-        $search,
-        $orderColumn,
-        $orderDir
-    )
-    {
+    public function get_list($groupId, $additional, $start, $length, $search, $orderColumn, $orderDir) {
         // Определяем маппинг колонок прямо в модели
         $columns = [
             0 => 'paramName',
@@ -651,35 +600,5 @@ class ParamModel extends Model
             LIMIT 1
         ";
         return $this->db->selectOne($sql, [(string)$value]);
-    }
-
-    /**
-     * Получение информации о группе по ID
-     */
-    public function get_group_info_from_id($groupId) {
-        $sql = "
-            SELECT *
-            FROM `dirty_group` 
-            WHERE 1
-                AND `dirty_group_id`             = ? 
-                AND `dirty_group_dirty_type_id`  = {$this->paramTypeId}
-                AND `dirty_group_remove_user_id` = 0
-        ";
-        return $this->db->selectOne($sql, [(int)$groupId]);
-    }
-
-    /**
-     * Получение информации о группе по наименованию
-     */
-    public function get_group_info_from_name($groupName) {
-        $sql = "
-            SELECT *
-            FROM `dirty_group` 
-            WHERE 1
-                AND `dirty_group_name`           = ? 
-                AND `dirty_group_dirty_type_id`  = {$this->paramTypeId}
-                AND `dirty_group_remove_user_id` = 0
-        ";
-        return $this->db->selectOne($sql, [(string)$groupName]);
     }
 }

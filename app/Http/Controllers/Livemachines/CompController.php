@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Контроллер для работы со справочниками параметров, ед.измерения и значений комплектаций
+ */
+
 namespace App\Http\Controllers\Livemachines;
 
 use App\Http\Controllers\Controller;
@@ -26,7 +30,7 @@ class CompController extends Controller {
     public function list() {
         return view('livemachines/comp', [
             'title'  => 'Справочник комплектаций',
-            'groups' => $this->paramModel->get_groups(),
+            'groups' => $this->groupModel->get_groups(),
         ]);
     }
 
@@ -168,7 +172,7 @@ class CompController extends Controller {
      */
     public function get_references() {
         try {
-            $groups = $this->paramModel->get_groups(0, false); // Получение списка всех групп технических характеристик
+            $groups = $this->groupModel->get_groups(0, false); // Получение списка всех групп технических характеристик
             $units  = $this->paramModel->get_units();          // Получение списка всех единиц измерения
             $files  = $this->paramModel->get_files();          // Получение списка всех файлов
         } catch(\Exception $e) {
@@ -421,53 +425,36 @@ class CompController extends Controller {
      * Создание новой группы
      */
     public function group_create(Request $request) {
-        try {
-            $request->validate([
-                'name' => 'required|string|max:255'
+        $request->validate([
+            'name' => 'required|string|max:255'
+        ]);
+
+        $name = $request->name ?? '';
+        $name = preg_replace('/\s+/', ' ', trim($name));
+        $name = trim($name);
+
+        if (mb_strlen($name) == 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Не указано название группы'
             ]);
-            
-            $name = $request->name ?? '';
-            $name = preg_replace('/\s+/', ' ', trim($name));
-            $name = trim($name);
-            
-            $connection = DB::connection('livemachines');
-            
-            // Проверяем, существует ли уже такая группа
-            $exists = $this->paramModel->get_group_info_from_name($name);
-            
-            if ($exists) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Группа с таким названием уже существует'
-                ]);
-            }
-            
-            // Создаем новую группу
-            $connection->insert("
-                INSERT INTO `dirty_group` 
-                SET `dirty_group_name` = ?, 
-                    `dirty_group_dirty_type_id` = 1,
-                    `dirty_group_add_user_id` = ?,
-                    `dirty_group_add_date` = UNIX_TIMESTAMP()
-            ", [$name, auth()->id()]);
-            
-            $newId = $connection->getPdo()->lastInsertId();
-            
+        }
+
+        $groupId = $this->groupModel->create($name);
+
+        if (is_numeric($groupId)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Группа успешно создана',
                 'group' => [
-                    'id' => $newId,
+                    'id'   => $groupId,
                     'name' => $name
                 ]
             ]);
-            
-        } catch (\Exception $e) {
-            Log::error('Error creating group: ' . $e->getMessage());
-            
+        } else {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при создании группы: ' . $e->getMessage()
+                'message' => 'Ошибка: ' . $groupId
             ]);
         }
     }
