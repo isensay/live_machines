@@ -6,8 +6,16 @@
 {{-- Page Content --}}
 @section('page_content')
     
-    {{-- Page Title --}}
-    @include('includes.title')
+    <!-- Заголовок страницы -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box sticky">
+                <h4 class="page-title">
+                    @yield('head_title')
+                </h4>
+            </div>
+        </div>
+    </div>
 
     <div class="row">
         <div class="col-xl-3 col-md-6">
@@ -89,7 +97,7 @@
     </div>
     <!-- end row -->
 
-    <div class="row">
+    <div class="row" style="display:none;">
 
         <div class="col-xl-4 col-lg-6">
             <div class="card">
@@ -237,14 +245,14 @@
                         <a data-bs-toggle="collapse" href="#cardCollpase4" role="button" aria-expanded="false" aria-controls="cardCollpase4"><i class="mdi mdi-minus"></i></a>
                         <a href="javascript:;" data-toggle="remove"><i class="mdi mdi-close"></i></a>
                     </div>
-                    <h4 class="header-title mb-0">Revenue By Location</h4>
+                    <h4 class="header-title mb-0">Страны производителей</h4>
 
                     <div id="cardCollpase4" class="collapse pt-3 show">
                         <div id="world-map-markers" style="height: 433px"></div>
-                    </div> <!-- collapsed end -->
-                </div> <!-- end card-body -->
-            </div> <!-- end card-->
-        </div> <!-- end col -->
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="col-xl-6">
             <div class="card">
@@ -257,9 +265,9 @@
                     <h4 class="header-title mb-0">Top Selling Products</h4>
 
                     <div id="cardCollpase5" class="collapse pt-3 show">
-                        <div class="table-responsive">
+                        <div class="table-responsive" style="max-height: 433px; overflow-y: auto;">
                             <table class="table table-hover table-centered mb-0">
-                                <thead>
+                                <thead class="sticky-top bg-body" style="z-index: 1;">
                                     <tr>
                                         <th>Product Name</th>
                                         <th>Price</th>
@@ -316,17 +324,41 @@
                                         <td>184</td>
                                         <td>$3,680.00</td>
                                     </tr>
+                                    <tr>
+                                        <td>Marco Shoes</td>
+                                        <td>$28.49</td>
+                                        <td>69</td>
+                                        <td>$1,965.81</td>
+                                    </tr>
+                                    <tr>
+                                        <td>ASOS Ridley High Waist</td>
+                                        <td>$79.49</td>
+                                        <td>82</td>
+                                        <td>$6,518.18</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Half Sleeve Shirt</td>
+                                        <td>$39.99</td>
+                                        <td>64</td>
+                                        <td>$2,559.36</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Lightweight Jacket</td>
+                                        <td>$20.00</td>
+                                        <td>184</td>
+                                        <td>$3,680.00</td>
+                                    </tr>
                                 </tbody>
                             </table>
-                        </div> <!-- end table responsive-->
-                    </div> <!-- collapsed end -->
-                </div> <!-- end card-body -->
-            </div> <!-- end card-->
-        </div> <!-- end col -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <!-- end row -->
 
-    <div class="row">
+    <div style="display:none;" class="row">
         <div class="col-xl-8">
             <div class="card">
                 <div class="card-body">
@@ -587,7 +619,7 @@
     <script src="/source/base/libs/admin-resources/jquery.vectormap/maps/jquery-jvectormap-world-mill-en.js"></script>
 
     <!-- Dashboard init-->
-    <script src="/source/base/js/pages/dashboard-sales.init.js"></script>
+    <!--<script src="/source/base/js/pages/dashboard-sales.init.js"></script>-->
 
 @endsection
 
@@ -620,5 +652,111 @@
 
     </script>
 
+
+<script>
+$(document).ready(function() {
+    const markers = [
+        { name: 'Германия', coords: [51.1657, 10.4515], city: 'Берлин', latLng: [52.5200, 13.4050] },
+        { name: 'Китай', coords: [35.8617, 104.1954], city: 'Пекин', latLng: [39.9042, 116.4074] },
+        { name: 'Россия', coords: [61.5240, 105.3188], city: 'Москва', latLng: [55.7558, 37.6173] },
+        { name: 'США', coords: [37.0902, -95.7129], city: 'Вашингтон', latLng: [38.9072, -77.0369] },
+        { name: 'Тайвань', coords: [23.6978, 120.9605], city: 'Тайбэй', latLng: [25.0330, 121.5654] },
+        { name: 'Япония', coords: [36.2048, 138.2529], city: 'Токио', latLng: [35.6762, 139.6503] }
+    ];
+    
+    // Инициализация карты
+    $('#world-map-markers').vectorMap({
+        map: 'world_mill_en',
+        backgroundColor: 'transparent',
+        borderColor: '#818181',
+        borderOpacity: 0.25,
+        borderWidth: 1,
+        color: '#f4f3f0',
+        enableZoom: true,
+        hoverColor: '#c9dfaf',
+        regionStyle: {
+            initial: { fill: '#e9ecef' },
+            hover: { fill: '#1abc9c' },
+            selected: { fill: '#1abc9c' }
+        },
+        
+        // Маркеры для городов
+        markers: markers.map(marker => ({
+            latLng: marker.latLng,
+            name: marker.city
+        })),
+        
+        markerStyle: {
+            initial: { fill: '#f1556c', stroke: '#FFFFFF', r: 8 },
+            hover: { fill: '#1abc9c', stroke: '#FFFFFF', r: 10 }
+        },
+        
+        onMarkerLabelShow: function(event, label, index) {
+            label.html('<strong>' + markers[index].city + '</strong><br><small>' + markers[index].name + '</small>');
+        }
+    });
+    
+    // Добавляем подписи городов поверх карты
+    setTimeout(function() {
+        addCityLabels(markers);
+    }, 1000);
+    
+    function addCityLabels(markers) {
+        // Получаем контейнер карты
+        const mapContainer = $('#world-map-markers');
+        const mapSvg = mapContainer.find('svg');
+        
+        if (!mapSvg.length) return;
+        
+        // Для каждого маркера добавляем текстовую подпись
+        markers.forEach((marker, index) => {
+            // Получаем координаты маркера на SVG
+            const markerElement = mapSvg.find('.jqvmap-marker').eq(index);
+            if (markerElement.length) {
+                const position = markerElement.position();
+                const markerX = position.left;
+                const markerY = position.top;
+                
+                // Создаем элемент с подписью
+                const $label = $(`
+                    <div class="city-label" 
+                         style="position: absolute; 
+                                left: ${markerX + 15}px; 
+                                top: ${markerY - 20}px; 
+                                background: rgba(0,0,0,0.7); 
+                                color: white; 
+                                padding: 2px 8px; 
+                                border-radius: 4px; 
+                                font-size: 11px; 
+                                font-weight: 500; 
+                                white-space: nowrap; 
+                                pointer-events: none; 
+                                z-index: 1000;
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                        ${marker.city}
+                    </div>
+                `);
+                
+                mapContainer.append($label);
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.city-label {
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+.city-label:hover {
+    background: rgba(26, 188, 156, 0.9);
+    transform: scale(1.05);
+}
+</style>
+
 @endsection
+
+
+
 
