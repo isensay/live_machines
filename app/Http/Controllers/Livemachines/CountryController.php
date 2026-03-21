@@ -34,10 +34,9 @@ class CountryController extends Controller {
     }
 
     /**
-     * AJAX -> JSON
      * Получение списка стран
      */
-    public function data_ajax(Request $request) {
+    public function data(Request $request) {
         // Искусственная задержка (для режима разработки)
         if (config('app.debug')) {
             usleep(500000);
@@ -63,131 +62,9 @@ class CountryController extends Controller {
     }
 
     /**
-     * Получить данные для редактирования
-     */
-    public function edit_data(Request $request, int $countryId) {
-        // Искусственная задержка (для режима разработки)
-        if (config('app.debug')) {
-            usleep(500000);
-        }
-
-        // Проверяем, это создание нового параметра?
-        $isNew = $request->get('new') === 'true' || $countryId === null;
-
-        if ($isNew) {
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'id'   => null,
-                    'name' => '',
-                ]
-            ]);
-        }
-
-        // Валидация
-        $request->validate([
-            'id' => 'integer',
-        ]);
-
-        // Получаем информацию
-        $country = $this->countryModel->get_info_from_id($countryId);
-
-        if (!$country) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Параметр не найден'
-            ], 404);
-        }
-
-        // ЗАГЛУШКА
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'id'   => $country->id,
-                'name' => $country->name,
-            ]
-        ]);
-
-        try {
-            // Проверяем, это создание нового параметра?
-            $isNew = $request->get('new') === 'true' || $paramNameId === null;
-
-            // Получаем значение additional из запроса
-            $additional = $request->get('additional', '0'); // По умолчанию '0'
-
-            if ($isNew) {
-                // Валидация
-                $request->validate(['additional' => 'integer|in:0,1']);
-
-                // Для нового параметра возвращаем пустые данные
-                return response()->json([
-                    'success' => true,
-                    'data'    => [
-                        'param' => [
-                            'id'      => null,
-                            'name'    => '',
-                            'type_id' => 1,
-                        ],
-                        'group_links' => [],
-                        'values'      => [],
-                        'param_files' => [],
-                        'additional'  => $additional,
-                        'checked'     => 0,
-                    ]
-                ]);
-            }
-
-            // Валидация
-            $request->validate([
-                'id'         => 'integer',
-                'additional' => 'integer|in:0,1'
-            ]);
-
-            $param = $this->paramModel->get_info_from_id($paramNameId); // Получаем основную информацию о параметре
-            
-            if (!$param) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Параметр не найден'
-                ], 404);
-            }
-            
-            $groupLinks = $this->paramModel->get_param_group_links($paramNameId, $additional); // Получаем привязки к группам с информацией о файлах
-            $checked    = $this->paramModel->get_param_checked($paramNameId);                  // Получаем дополнительную информацию о параметре (checked)
-            $values     = $this->paramModel->get_units_and_values($paramNameId, $additional);  // Получаем все значения с привязкой к файлам
-            $paramFiles = $this->paramModel->get_param_files($paramNameId, $additional);       // Получаем список всех файлов для параметра
-            
-            return response()->json([
-                'success' => true,
-                'data'    => [
-                    'param'       => $param,
-                    'group_links' => $groupLinks,
-                    'values'      => $values,
-                    'param_files' => $paramFiles,
-                    'additional'  => $additional,
-                    'checked'     => $checked,
-                ]
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error getting edit data: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка загрузки данных: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
      * Валидация и подготовка входных данных
      */
     private function validate_and_prepare($request, $countryId = null) {
-        Log::debug($request);
-
-        // Искусственная задержка (для режима разработки)
-        if (config('app.debug')) {
-            usleep(500000);
-        }
-
         if ($countryId == 'new') {
             $countryId = 0;
         } elseif (is_numeric($countryId) && (int)$countryId > 0) {
@@ -213,6 +90,97 @@ class CountryController extends Controller {
     }
 
     /**
+     * Создание новой записи
+     */
+    public function create(Request $request) {
+        // Искусственная задержка (для режима разработки)
+        if (config('app.debug')) {
+            usleep(500000);
+        }
+
+        // Валидируем и подготавливаем входные данные
+        $validAndPrepareData = $this->validate_and_prepare($request, 'new');
+
+        if (is_array($validAndPrepareData)) {
+            $countryName = $validAndPrepareData['name'];
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: '.$validAndPrepareData
+            ]);
+        }
+
+        // Проверяем есть ли уже такая запись
+        $countryId = $this->countryModel->get_id_from_name($countryName);
+
+        if (is_numeric($countryId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: запись уже существует'
+            ]);
+        }
+
+        // Добавляем новую запись
+        $result = $this->countryModel->create($countryName);
+
+        if ($result === true) {
+            return response()->json([
+                'success' => true,
+                'message' => ''
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: '.$result
+            ]);
+        }
+    }
+
+    /**
+     * Получить данные для редактирования
+     */
+    public function edit(Request $request, int $countryId) {
+        // Искусственная задержка (для режима разработки)
+        if (config('app.debug')) {
+            usleep(500000);
+        }
+
+        // Проверяем, это создание нового параметра?
+        $isNew = $request->get('new') === 'true' || $countryId === null;
+
+        if ($isNew) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id'   => null,
+                    'name' => '',
+                ]
+            ]);
+        }
+
+        // Валидация
+        $request->validate(['id' => 'integer']);
+
+        // Получаем информацию
+        $country = $this->countryModel->get_info_from_id($countryId);
+
+        if (!$country) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Параметр не найден'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id'   => $country->id,
+                'name' => $country->name,
+            ]
+        ]);
+    }
+
+    /**
      * Сохранение изменений имеющейся записи
      */
     public function update(Request $request, $countryId) {
@@ -233,8 +201,8 @@ class CountryController extends Controller {
             ]);
         }
 
-        // Обновляем данные
-        $result = $this->countryModel->set($countryId, $countryName);
+        // Обновляем даные
+        $result = $this->countryModel->edit($countryId, $countryName);
 
         if ($result === true) {
             return response()->json([
@@ -252,21 +220,6 @@ class CountryController extends Controller {
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка: ' . $validAndPrepareData
-            ]);
-        }
-
-        // Обновляем данные
-        $result = $this->countryModel->set($validAndPrepareData['name']);
-
-        if ($result === true) {
-            return response()->json([
-                'success' => true,
-                'message' => ''
-            ]);
-        } else {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка: '.$result
             ]);
         }
     }

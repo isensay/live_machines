@@ -55,11 +55,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Страны
     Route::prefix('livemachines/sprav')->name('lm_country_')->group(function () {
         Route::prefix('country')->group(function () {
-            Route::get('/',             [CountryController::class, 'index'])->name('index');
-            Route::get('/data',         [CountryController::class, 'data_ajax'])->name('data');
-            Route::get('/edit/{id}',    [CountryController::class, 'edit_data'])->name('edit')->whereNumber('id');
-            Route::post('/update/{id}', [CountryController::class, 'update'])->name('update')->whereNumber('id');
-            Route::delete('/{id}',      [CountryController::class, 'destroy'])->name('destroy')->whereNumber('id');
+            Route::get('/', [CountryController::class, 'index'])->name('index'); // Основная страница
+            Route::middleware('ajax')->group(function () {
+                Route::get('/data',    [CountryController::class, 'data'])->name('data');     // Получение списка стран
+                Route::post('/create', [CountryController::class, 'create'])->name('create'); // Создание страны (сохранение)
+                Route::whereNumber('id')->group(function () {
+                    Route::get('/edit/{id}',    [CountryController::class, 'edit'])->name('edit');       // Редактирование страны (загрузка информации в окно)
+                    Route::post('/update/{id}', [CountryController::class, 'update'])->name('update');   // Редактирование страны (сохранение)
+                    Route::delete('/{id}',      [CountryController::class, 'destroy'])->name('destroy'); // Удаление страны
+                });
+            });
         });
     });
 

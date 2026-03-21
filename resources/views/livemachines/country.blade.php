@@ -13,7 +13,7 @@
                     @yield('head_title')
                 </h4>
                 <div class="page-title-right">
-                    <a href="#" class="btn btn-success btn-rounded">
+                    <a href="#" id="btnCreate" class="btn btn-success btn-rounded">
                         <i class="mdi mdi-plus me-1"></i> Создать
                     </a>
                 </div>
@@ -34,12 +34,10 @@
                                     <table id="basic-datatable" 
                                         class="table dt-responsive nowrap w-100"
                                         data-url="{{ route('lm_country_data') }}"
+                                        data-create-url="{{ route('lm_country_create') }}"
                                         data-edit-url="{{ route('lm_country_edit', ['id' => 'REPLACE_WITH_ID']) }}"
                                         data-update-url={{ route('lm_country_update', ['id' => 'REPLACE_WITH_ID']) }}
                                         data-delete-url={{ route('lm_country_destroy', ['id' => 'REPLACE_WITH_ID']) }}
-                                        {{--
-                                        data-create-url="{{ route('lm_tech_create_data') }}"
-                                        --}}
                                     >
                                         <thead>
                                             <tr>

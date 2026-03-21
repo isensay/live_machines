@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use App\Http\Middleware\AjaxOnly;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
             'login.throttle' => \App\Http\Middleware\LoginThrottle::class,
+            'ajax' => \App\Http\Middleware\AjaxOnly::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

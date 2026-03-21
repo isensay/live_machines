@@ -164,9 +164,32 @@ class CountryModel extends Model
     }
 
     /**
+     * Создание новой записи
+     */
+    public function create($countryName) {
+        try {
+            $this->db->beginTransaction();
+
+            $countryId = $this->get_id_from_name($countryName, true);
+
+            if (is_numeric($countryId)) {
+                $this->db->commit();
+                return true;
+            } else {
+                $this->db->rollBack();
+                return $countryId;
+            }
+        } catch (\Exception $e) {
+            Log::error('Create error: '.$e->getMessage());
+            $this->db->rollBack();
+            return $e->getMessage();
+        }
+    }
+
+    /**
      * Обновление данных
      */
-    public function set($countryId, $countryName) {
+    public function edit($countryId, $countryName) {
         try {
             $this->db->beginTransaction();
 
