@@ -38,6 +38,7 @@ class HomeController extends Controller
 
                 'sslExpiryDate'    => ($metrics['ssl_certificate']['expiry_date'] === null) ? 'дата не определена' : $metrics['ssl_certificate']['expiry_date'],
                 'sslDaysRemaining' => $metrics['ssl_certificate']['days_remaining'],
+                'sslHostName'      => $metrics['ssl_certificate']['hostname'],
             ],
             'features'    => [
                 'Laravel '.app()->version(),
