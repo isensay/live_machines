@@ -16,13 +16,13 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="knob-chart invisible" dir="ltr">
                             <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#f06b78"
-                                data-bgColor="#fbdee1" value="58"
+                                data-bgColor="#fbdee1" value="{{ $system['diskUsed'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
                                 data-thickness=".15"/>
                         </div>
                         <div class="text-end">
-                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">268</span> </h3>
-                            <p class="text-muted mb-0">New Customers</p>
+                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['diskTotal'] }} </span> Гб </h3>
+                            <p class="text-muted mb-0">Размер диска</p>
                         </div>
                     </div>
                 </div>
@@ -35,13 +35,13 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="knob-chart invisible" dir="ltr">
                             <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#6c757d"
-                                data-bgColor="#ebeff2" value="80"
+                                data-bgColor="#ebeff2" value="{{ $system['memoryUsed'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
                                 data-thickness=".15"/>
                         </div>
                         <div class="text-end">
-                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">8574</span> </h3>
-                            <p class="text-muted mb-0">Online Orders</p>
+                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['memoryTotal'] }}</span> Гб </h3>
+                            <p class="text-muted mb-0">Оперативная память</p>
                         </div>
                     </div>
                 </div>
@@ -54,13 +54,13 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="knob-chart invisible" dir="ltr">
                             <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#f06b78"
-                                data-bgColor="#fbdee1" value="77"
+                                data-bgColor="#fbdee1" value="{{ $system['redisUsed'] }}""
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
                                 data-thickness=".15"/>
                         </div>
                         <div class="text-end">
-                            <h3 class="mb-1 mt-0"> $<span data-plugin="counterup">958.25</span> </h3>
-                            <p class="text-muted mb-0">Revenue</p>
+                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['redisTotal'] }}</span> Гб </h3>
+                            <p class="text-muted mb-0">Redis</p>
                         </div>
                     </div>
                 </div>
@@ -73,13 +73,13 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="knob-chart invisible" dir="ltr">
                             <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#6c757d"
-                                data-bgColor="#ebeff2" value="35"
+                                data-bgColor="#ebeff2" value="{{ $system['sslDaysRemaining'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
                                 data-thickness=".15"/>
                         </div>
                         <div class="text-end">
-                            <h3 class="mb-1 mt-0"> $<span data-plugin="counterup">89.25</span> </h3>
-                            <p class="text-muted mb-1">Daily Average</p>
+                            <h3 class="mb-1 mt-0"> {{ $system['sslExpiryDate'] }} <span style="display:none;" data-plugin="counterup">0</span> </h3>
+                            <p class="text-muted mb-1">SSL (дата окончания сертификата)</p>
                         </div>
                     </div>
                 </div>
