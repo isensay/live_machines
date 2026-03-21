@@ -35,6 +35,7 @@ $(document).ready(function() {
                 { 
                     data:       'manufCount', 
                     name:       'manufs',
+                    className:  'text-center',
                     orderable:  false,
                     searchable: false,
                     render:    (data) => data || '<span class="text-muted">-</span>' 
@@ -42,6 +43,7 @@ $(document).ready(function() {
                 { 
                     data:       'fileCount',  
                     name:       'files',
+                    className:  'text-center',
                     orderable:  false,
                     searchable: false,
                     render:    (data) => data || '<span class="text-muted">-</span>' 
