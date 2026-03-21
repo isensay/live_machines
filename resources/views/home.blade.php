@@ -78,9 +78,8 @@
                                 data-thickness=".15"/>
                         </div>
                         <div class="text-end">
-                            <h3 class="mb-1 mt-0"> {{ $system['sslExpiryDate'] }} <span style="display:none;" data-plugin="counterup">0</span> </h3>
-                            <p class="text-muted mb-1">SSL (дата окончания сертификата)</p>
-                            <p class="text-muted mb-1">{{ $system['sslHostName'] }}</p>
+                            <h3 style="display:none;" class="mb-1 mt-0"> {{ $system['sslExpiryDate'] }} <span data-plugin="counterup">0</span> </h3>
+                            <p class="text-muted mb-1">SSL (дата окончания сертификата):<br>{{ $system['sslExpiryDate'] }}</p>
                         </div>
                     </div>
                 </div>
