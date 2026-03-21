@@ -19,7 +19,7 @@ class HomeController extends Controller
     public function index() {
         $metrics = $this->healthService->getAllMetrics();
 
-        dump($metrics);
+        //dump($metrics);
 
         //$currentLocale = app()->getLocale();
         //dump($currentLocale);
