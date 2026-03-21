@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Services\HealthCheckService;
+use App\Models\Livemachines\ManufModel;
 
 class HomeController extends Controller
 {
@@ -11,6 +14,9 @@ class HomeController extends Controller
 
     public function __construct(HealthCheckService $healthService) {
         $this->healthService = $healthService;
+
+        $this->dbConnection = DB::connection('livemachines');
+        $this->manufModel   = new ManufModel([], $this->dbConnection);
     }
 
     /**
@@ -18,6 +24,8 @@ class HomeController extends Controller
      */
     public function index() {
         $metrics = $this->healthService->getAllMetrics();
+
+        $manufs = $this->manufModel->get_list();
 
         //dump($metrics);
 
@@ -39,6 +47,7 @@ class HomeController extends Controller
                 'sslExpiryDate'    => ($metrics['ssl_certificate']['expiry_date'] === null) ? 'дата не определена' : date('d.m.Y в H:i', strtotime($metrics['ssl_certificate']['expiry_date'])),
                 'sslDaysRemaining' => $metrics['ssl_certificate']['days_remaining'],
             ],
+            'manufs' => $manufs,
             'features'    => [
                 'Laravel '.app()->version(),
                 'PHP '.PHP_VERSION,
