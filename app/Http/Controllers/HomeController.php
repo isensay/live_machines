@@ -36,7 +36,7 @@ class HomeController extends Controller
                 'redisTotal' => round($metrics['redis']['total_gb'], 1),
                 'redisUsed'  => round($metrics['redis']['used_gb'], 1),
 
-                'sslExpiryDate'    => ($metrics['ssl_certificate']['expiry_date'] === null) ? 'дата не определена' : date('d.m.Y | H:i', strtotime($metrics['ssl_certificate']['expiry_date'])),
+                'sslExpiryDate'    => ($metrics['ssl_certificate']['expiry_date'] === null) ? 'дата не определена' : date('d.m.Y в H:i', strtotime($metrics['ssl_certificate']['expiry_date'])),
                 'sslDaysRemaining' => $metrics['ssl_certificate']['days_remaining'],
             ],
             'features'    => [
