@@ -81,10 +81,10 @@
                                         data-url="{{ route('lm_comp_data') }}"
                                         data-references-url="{{ route('lm_comp_references') }}"
                                         data-update-url={{ route('lm_comp_update', ['id' => 'REPLACE_WITH_ID']) }}
-                                        data-delete-url={{ route('lm_comp_destroy', ['id' => 'REPLACE_WITH_ID']) }}
-                                        data-create-url="{{ route('lm_comp_create_data') }}"
-                                        data-group-create-url="{{ route('lm_comp_group_create') }}"
-                                        data-edit-url="{{ route('lm_comp_edit_data', ['id' => 'REPLACE_WITH_ID']) }}"
+                                        data-delete-url={{ route('lm_comp_remove', ['id' => 'REPLACE_WITH_ID']) }}
+                                        data-create-url="{{ route('lm_comp_create') }}"
+                                        data-edit-url="{{ route('lm_comp_edit', ['id' => 'REPLACE_WITH_ID']) }}"
+                                        data-group-create-url="{{ route('lm_comp_create_group') }}"
                                     >
                                         <thead>
                                             <tr>

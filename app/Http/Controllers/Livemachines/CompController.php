@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Контроллер для работы со справочниками параметров, ед.измерения и значений комплектаций
+ * Контроллер для работы со справочником комплектаций,
  */
 
 namespace App\Http\Controllers\Livemachines;
@@ -17,6 +17,8 @@ class CompController extends Controller {
     private $techParam = null;
     private $dbConnection;
     private $paramTypeId = 2; // Комплектации
+    private $paramModel;
+    private $groupModel;
 
     public function __construct() {
         $this->dbConnection = DB::connection('livemachines');
@@ -25,9 +27,9 @@ class CompController extends Controller {
     }
 
     /**
-     * Страница с техническими характеристиками
+     * Основная страница
      */
-    public function list() {
+    public function index() {
         return view('livemachines/comp', [
             'title'  => 'Справочник комплектаций',
             'groups' => $this->groupModel->get_groups(),
@@ -35,10 +37,9 @@ class CompController extends Controller {
     }
 
     /**
-     * AJAX -> JSON
-     * Получение списка технических параметров
+     * Получение списка комплектаций
      */
-    public function data_ajax(Request $request) {
+    public function data(Request $request) {
         // Параметры DataTable
         $draw        = $request->get('draw');
         $start       = (int)$request->get('start', 0);
@@ -51,53 +52,86 @@ class CompController extends Controller {
         $groupId    = $request->get('group_id', 'none');
         $additional = $request->get('additional', 0);
 
-        // Получаем список технических параметров
+        // Получаем список комплектаций
         $result = $this->paramModel->get_list($groupId, $additional, $start, $length, $search, $orderColumn, $orderDir);
         
         return response()->json([
-            'draw' => $draw,
-            'recordsTotal' => $result['total'],
+            'draw'            => $draw,
+            'recordsTotal'    => $result['total'],
             'recordsFiltered' => $result['total'],
-            'data' => $result['data']
+            'data'            => $result['data']
         ]);
     }
 
     /**
-     * Удаление всех файлов с которыми связана техническая характеристика
+     * Получение справочников для формы создания/редактирования
      */
-    public function destroy(int $id) {
-        $result = $this->paramModel->remove($id);
+    public function references() {
+        try {
+            $groups = $this->groupModel->get_groups(0, false); // Получение списка всех групп технических характеристик
+            $units  = $this->paramModel->get_units();          // Получение списка всех единиц измерения
+            $files  = $this->paramModel->get_files();          // Получение списка всех файлов
+        } catch(\Exception $e) {
+            Log::error('Error getting references: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки данных: ' . $e->getMessage()
+            ], 500);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'groups' => $groups,
+                'units'  => $units,
+                'files'  => $files
+            ]
+        ]);
+    }
+
+    /**
+     * Создание комплектации
+     */
+    public function create(Request $request) {
+        // Валидируем и подготавливаем входные данные
+        $validAndPrepareData = $this->validate_and_prepare($request, 'new');
+
+        if (is_string($validAndPrepareData)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: ' . $validAndPrepareData
+            ]);
+        }
+
+        // Обновляем данные
+        $result = $this->paramModel->create(
+            $validAndPrepareData['paramName'],
+            $validAndPrepareData['paramNameId'],
+            $validAndPrepareData['newParamNameId'],
+            $validAndPrepareData['validParams'],
+            $validAndPrepareData['additionalFilter'],
+            $validAndPrepareData['additional'],
+            $validAndPrepareData['checked']
+        );
 
         if ($result === true) {
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Запись успешно удалена',
-                    'id' => $id
-                ]);
-            }
-
-            return redirect()
-                ->route('lm_tech.list')
-                ->with('success', 'Запись успешно удалена');
+            return response()->json([
+                'success' => true,
+                'message' => 'Параметр успешно обновлен'
+            ]);
         } else {
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $result
-                ], 500);
-            }
-            
-            return redirect()
-                ->route('lm_tech.list')
-                ->with('error', $result);
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: '.$result
+            ]);
         }
     }
 
     /**
-     * Получить данные для редактирования
+     * Получение данных для редактирования
      */
-    public function edit_data(Request $request, $paramNameId = null) {
+    public function edit(Request $request, $paramNameId = null) {
         try {
             // Проверяем, это создание нового параметра?
             $isNew = $request->get('new') === 'true' || $paramNameId === null;
@@ -168,30 +202,103 @@ class CompController extends Controller {
     }
 
     /**
-     * Получить справочники для формы редактирования
+     * Сохренение изменений
      */
-    public function get_references() {
-        try {
-            $groups = $this->groupModel->get_groups(0, false); // Получение списка всех групп технических характеристик
-            $units  = $this->paramModel->get_units();          // Получение списка всех единиц измерения
-            $files  = $this->paramModel->get_files();          // Получение списка всех файлов
-        } catch(\Exception $e) {
-            Log::error('Error getting references: ' . $e->getMessage());
-            
+    public function update(Request $request, $paramNameId) {
+        // Валидируем и подготавливаем входные данные
+        $validAndPrepareData = $this->validate_and_prepare($request, $paramNameId);
+
+        if (is_string($validAndPrepareData)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка загрузки данных: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Ошибка: ' . $validAndPrepareData
+            ]);
         }
-        
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'groups' => $groups,
-                'units'  => $units,
-                'files'  => $files
-            ]
+
+        // Обновляем данные
+        $result = $this->paramModel->set($validAndPrepareData);
+
+        if ($result === true) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Параметр успешно обновлен'
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: '.$result
+            ]);
+        }
+    }
+
+    /**
+     * Удаление комплектации
+     */
+    public function remove(int $id) {
+        $result = $this->paramModel->remove($id);
+
+        if ($result === true) {
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Запись успешно удалена',
+                    'id' => $id
+                ]);
+            }
+
+            return redirect()
+                ->route('lm_tech.list')
+                ->with('success', 'Запись успешно удалена');
+        } else {
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result
+                ], 500);
+            }
+            
+            return redirect()
+                ->route('lm_tech.list')
+                ->with('error', $result);
+        }
+    }
+
+    /**
+     * Создание новой группы
+     */
+    public function create_group(Request $request) {
+        $request->validate([
+            'name' => 'required|string|max:255'
         ]);
+
+        $name = $request->name ?? '';
+        $name = preg_replace('/\s+/', ' ', trim($name));
+        $name = trim($name);
+
+        if (mb_strlen($name) == 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Не указано название группы'
+            ]);
+        }
+
+        $groupId = $this->groupModel->create($name);
+
+        if (is_numeric($groupId)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Группа успешно создана',
+                'group' => [
+                    'id'   => $groupId,
+                    'name' => $name
+                ]
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: ' . $groupId
+            ]);
+        }
     }
 
     /**
@@ -342,120 +449,5 @@ class CompController extends Controller {
             'additional'       => $additional,
             'checked'          => $checked
         ];
-    }
-
-    /**
-     * Создание нового параметра
-     */
-    public function create(Request $request)
-    {
-        // Валидируем и подготавливаем входные данные
-        $validAndPrepareData = $this->validate_and_prepare($request, 'new');
-
-        if (is_string($validAndPrepareData)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка: ' . $validAndPrepareData
-            ]);
-        }
-
-        // Обновляем данные
-        $result = $this->paramModel->create(
-            $validAndPrepareData['paramName'],
-            $validAndPrepareData['paramNameId'],
-            $validAndPrepareData['newParamNameId'],
-            $validAndPrepareData['validParams'],
-            $validAndPrepareData['additionalFilter'],
-            $validAndPrepareData['additional'],
-            $validAndPrepareData['checked']
-        );
-
-        if ($result === true) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Параметр успешно обновлен'
-            ]);
-        } else {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка: '.$result
-            ]);
-        }
-    }
-
-    /**
-     * Обновление параметра
-     */
-    public function update(Request $request, $paramNameId) {
-        // Валидируем и подготавливаем входные данные
-        $validAndPrepareData = $this->validate_and_prepare($request, $paramNameId);
-
-        if (is_string($validAndPrepareData)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка: ' . $validAndPrepareData
-            ]);
-        }
-
-        // Обновляем данные
-        $result = $this->paramModel->set(
-            $validAndPrepareData['paramName'],
-            $validAndPrepareData['paramNameId'],
-            $validAndPrepareData['newParamNameId'],
-            $validAndPrepareData['validParams'],
-            $validAndPrepareData['additionalFilter'],
-            $validAndPrepareData['additional'],
-            $validAndPrepareData['checked']
-        );
-
-        if ($result === true) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Параметр успешно обновлен'
-            ]);
-        } else {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка: '.$result
-            ]);
-        }
-    }
-
-    /**
-     * Создание новой группы
-     */
-    public function group_create(Request $request) {
-        $request->validate([
-            'name' => 'required|string|max:255'
-        ]);
-
-        $name = $request->name ?? '';
-        $name = preg_replace('/\s+/', ' ', trim($name));
-        $name = trim($name);
-
-        if (mb_strlen($name) == 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Не указано название группы'
-            ]);
-        }
-
-        $groupId = $this->groupModel->create($name);
-
-        if (is_numeric($groupId)) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Группа успешно создана',
-                'group' => [
-                    'id'   => $groupId,
-                    'name' => $name
-                ]
-            ]);
-        } else {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка: ' . $groupId
-            ]);
-        }
     }
 }

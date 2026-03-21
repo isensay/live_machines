@@ -57,10 +57,10 @@
                             </li>
                             --}}
                             <li>
-                                <a href="{{ route('lm_tech_list') }}">Тех. характеристики</a>
+                                <a href="{{ route('lm_tech_index') }}">Тех. характеристики</a>
                             </li>
                             <li>
-                                <a href="{{ route('lm_comp_list') }}">Комплектации</a>
+                                <a href="{{ route('lm_comp_index') }}">Комплектации</a>
                             </li>
                             <li>
                                 <a href="{{ route('lm_model_list') }}">Модели</a>

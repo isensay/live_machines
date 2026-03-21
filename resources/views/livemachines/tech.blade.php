@@ -81,10 +81,10 @@
                                         data-url="{{ route('lm_tech_data') }}"
                                         data-references-url="{{ route('lm_tech_references') }}"
                                         data-update-url={{ route('lm_tech_update', ['id' => 'REPLACE_WITH_ID']) }}
-                                        data-delete-url={{ route('lm_tech_destroy', ['id' => 'REPLACE_WITH_ID']) }}
-                                        data-create-url="{{ route('lm_tech_create_data') }}"
-                                        data-group-create-url="{{ route('lm_tech_group_create') }}"
-                                        data-edit-url="{{ route('lm_tech_edit_data', ['id' => 'REPLACE_WITH_ID']) }}"
+                                        data-delete-url={{ route('lm_tech_remove', ['id' => 'REPLACE_WITH_ID']) }}
+                                        data-create-url="{{ route('lm_tech_create') }}"
+                                        data-edit-url="{{ route('lm_tech_edit', ['id' => 'REPLACE_WITH_ID']) }}"
+                                        data-group-create-url="{{ route('lm_tech_create_group') }}"
                                     >
                                         <thead>
                                             <tr>

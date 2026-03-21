@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Модель для работы со справочником стран
+ */
+
 namespace App\Models\Livemachines;
 
 use Illuminate\Database\Eloquent\Model;
@@ -10,15 +14,12 @@ class CountryModel extends Model
 {
     protected $db;
     protected $pdo;
-
     protected static $eventFired = false; // Чтобы в профайлере не отображалось что модель подключена несколько раз из за $this->fireModelEvent()
-
-    public $paramTypeId;
 
     /**
      * Подключение к БД
      */
-    public function __construct(array $attributes = [], $connection = null, $paramTypeId = -1) {
+    public function __construct(array $attributes = [], $connection = null) {
         parent::__construct($attributes);
         
         // Используем переданное соединение или создаем новое
@@ -30,8 +31,6 @@ class CountryModel extends Model
             $this->fireModelEvent('retrieved', false);
             self::$eventFired = true;
         }
-
-        $this->paramTypeId = $paramTypeId;
     }
 
     /**

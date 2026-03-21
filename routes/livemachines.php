@@ -25,40 +25,63 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Технические характеристики
     Route::prefix('livemachines/sprav')->name('lm_tech_')->group(function () {
         Route::prefix('tech')->group(function () {
-            Route::get('/',              [TechController::class, 'list'])->name('list');
-            Route::get('/data',          [TechController::class, 'data_ajax'])->name('data');
-            Route::get('/references',    [TechController::class, 'get_references'])->name('references');
-            Route::get('/create',        [TechController::class, 'edit_data'])->name('create_data');
-            Route::get('/edit/{id}',     [TechController::class, 'edit_data'])->name('edit_data')->whereNumber('id');
-            Route::post('/create',       [TechController::class, 'create'])->name('create');
-            Route::post('/update/{id}',  [TechController::class, 'update'])->name('update')->whereNumber('id');
-            Route::post('/group/create', [TechController::class, 'group_create'])->name('group_create');
-            Route::delete('/{id}',       [TechController::class, 'destroy'])->name('destroy')->whereNumber('id');
+            // Основная страница
+            Route::get('/', [TechController::class, 'index'])->name('index'); 
+
+            // Ajax - маршруты
+            Route::middleware('ajax')->group(function () {
+                Route::get('/data',          [TechController::class, 'data'])->name('data');                 // Получение списка технических характеристик
+                Route::get('/references',    [TechController::class, 'references'])->name('references');     // Получение справочников для формы создания/редактирования
+                Route::get('/create',        [TechController::class, 'edit'])->name('create');               // Создание технической характеристики (загрузка информации в окно)
+                Route::post('/create',       [TechController::class, 'create'])->name('create');             // Создание технической характеристики (сохранение)
+                Route::post('/create/group', [TechController::class, 'create_group'])->name('create_group'); // Создание группы
+
+                // Маршруты с ID
+                Route::whereNumber('id')->group(function () {
+                    Route::get('/edit/{id}',     [TechController::class, 'edit'])->name('edit');      // Редактирование (загрузка информации в окно)
+                    Route::post('/update/{id}',  [TechController::class, 'update'])->name('update');  // Редактирование (сохранение)
+                    Route::delete('/{id}',       [TechController::class, 'remove'])->name('remove');  // Удаление технической характеристики
+                });
+            });
         });
     });
 
     // Комплектации
     Route::prefix('livemachines/sprav')->name('lm_comp_')->group(function () {
         Route::prefix('comp')->group(function () {
-            Route::get('/',              [CompController::class, 'list'])->name('list');
-            Route::get('/data',          [CompController::class, 'data_ajax'])->name('data');
-            Route::get('/references',    [CompController::class, 'get_references'])->name('references');
-            Route::get('/create',        [CompController::class, 'edit_data'])->name('create_data');
-            Route::get('/edit/{id}',     [CompController::class, 'edit_data'])->name('edit_data')->whereNumber('id');
-            Route::post('/create',       [CompController::class, 'create'])->name('create');
-            Route::post('/update/{id}',  [CompController::class, 'update'])->name('update')->whereNumber('id');
-            Route::post('/group/create', [CompController::class, 'group_create'])->name('group_create');
-            Route::delete('/{id}',       [CompController::class, 'destroy'])->name('destroy')->whereNumber('id');
+            // Основная страница
+            Route::get('/', [CompController::class, 'index'])->name('index'); 
+
+            // Ajax - маршруты
+            Route::middleware('ajax')->group(function () {
+                Route::get('/data',          [CompController::class, 'data'])->name('data');                 // Получение списка комплектаций
+                Route::get('/references',    [CompController::class, 'references'])->name('references');     // Получение справочников для формы создания/редактирования
+                Route::get('/create',        [CompController::class, 'edit'])->name('create');               // Создание комплектации (загрузка информации в окно)
+                Route::post('/create',       [CompController::class, 'create'])->name('create');             // Создание комплектации (сохранение)
+                Route::post('/create/group', [CompController::class, 'create_group'])->name('create_group'); // Создание комплектации
+
+                // Маршруты с ID
+                Route::whereNumber('id')->group(function () {
+                    Route::get('/edit/{id}',     [CompController::class, 'edit'])->name('edit');      // Редактирование (загрузка информации в окно)
+                    Route::post('/update/{id}',  [CompController::class, 'update'])->name('update');  // Редактирование (сохранение)
+                    Route::delete('/{id}',       [CompController::class, 'remove'])->name('remove');  // Удаление комплектации
+                });
+            });
         });
     });
 
     // Страны
     Route::prefix('livemachines/sprav')->name('lm_country_')->group(function () {
         Route::prefix('country')->group(function () {
-            Route::get('/', [CountryController::class, 'index'])->name('index'); // Основная страница
+            // Основная страница
+            Route::get('/', [CountryController::class, 'index'])->name('index');
+
+            // Ajax - маршруты
             Route::middleware('ajax')->group(function () {
                 Route::get('/data',    [CountryController::class, 'data'])->name('data');     // Получение списка стран
                 Route::post('/create', [CountryController::class, 'create'])->name('create'); // Создание страны (сохранение)
+
+                // Маршруты с ID
                 Route::whereNumber('id')->group(function () {
                     Route::get('/edit/{id}',    [CountryController::class, 'edit'])->name('edit');       // Редактирование страны (загрузка информации в окно)
                     Route::post('/update/{id}', [CountryController::class, 'update'])->name('update');   // Редактирование страны (сохранение)

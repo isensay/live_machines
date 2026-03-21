@@ -418,10 +418,21 @@ class ParamModel extends Model
     /**
      * Обновление параметра
      */
-    public function set($paramName, $fromParamNameId, $toParamNameId, $params, $additionalFilter, $additional, $checked) {
+    //public function update($paramName, $fromParamNameId, $toParamNameId, $params, $additionalFilter, $additional, $checked) {
+    public function set($data) {
         try {
-            $this->db->beginTransaction();
+            $paramName        = $data['paramName'];
+            $fromParamNameId  = $data['paramNameId'];
+            $toParamNameId    = $data['newParamNameId'];
+            $params           = $data['validParams'];
+            $additionalFilter = $data['additionalFilter'];
+            $additional       = $data['additional'];
+            $checked          = $data['checked'];
+
             $currentUserId = auth()->id();
+
+            $this->db->beginTransaction();
+            
 
             // Получаем все группы к которому привязан текущий параметр
             $sql = "
