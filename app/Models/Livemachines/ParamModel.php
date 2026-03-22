@@ -83,8 +83,6 @@ class ParamModel extends Model
         // Определяем маппинг колонок прямо в модели
         $columns = [
             0 => 'paramName',
-            1 => 'groups',
-            2 => 'files',
         ];
         
         // Условие по группе
@@ -101,6 +99,16 @@ class ParamModel extends Model
         } else {
             $groupIdInt = (int)$groupId;
             $sqlWhereGroup = ($groupIdInt > 0) ? "AND `dirty_param_dirty_group_id` = ".$this->pdo->quote((int)$groupIdInt) : "";
+        }
+
+        // Условие по виду параметра (основной или дополнительный)
+        if (in_array($additional, [-1,0,1])) {
+            $sqlWhereAdditional = ($additional >= 0) ? "AND `dirty_param_additional` = ".$this->pdo->quote((int)$additional) : "";
+        } else {
+            return [
+                'data'  => [],
+                'total' => 0,
+            ];
         }
 
         // Условие по поиску
@@ -158,8 +166,8 @@ class ParamModel extends Model
                 )
             WHERE 1
                 AND `dirty_param_name_dirty_type_id`  = {$this->paramTypeId}
-                AND `dirty_param_additional`          = ?
                 AND `dirty_param_name_remove_user_id` = 0
+                {$sqlWhereAdditional}
                 {$sqlWhereGroup}
                 {$sqlWhereSearch}
             GROUP BY `paramNameId`
@@ -169,7 +177,7 @@ class ParamModel extends Model
         ";
         
         // Выполняем финальный запрос
-        $data = $this->db->select($sql, [$additional]);
+        $data = $this->db->select($sql);
 
         // Получаем счетчики
         $filteredResult = $this->db->selectOne("SELECT FOUND_ROWS() as `total`");
