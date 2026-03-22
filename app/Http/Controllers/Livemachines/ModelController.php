@@ -10,25 +10,25 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Models\Livemachines\CountryModel;
+use App\Models\Livemachines\ModelModel;
 
 
-class CountryController extends Controller {
+class ModelController extends Controller {
     private $techParam = null;
     private $dbConnection;
-    private $countryModel;
+    private $modelModel;
 
     public function __construct() {
         $this->dbConnection = DB::connection('livemachines');
-        $this->countryModel = new CountryModel([], $this->dbConnection);
+        $this->modelModel = new ModelModel([], $this->dbConnection);
     }
 
     /**
      * Список стран (основная страница)
      */
     public function index() {
-        return view('livemachines/country', [
-            'title' => 'Справочник стран'
+        return view('livemachines/model', [
+            'title' => 'Справочник моделей'
         ]);
     }
 
@@ -50,7 +50,7 @@ class CountryController extends Controller {
         $orderDir    = $request->get('order')[0]['dir'] ?? 'asc';
 
         // Получаем список стран
-        $result = $this->countryModel->get_list($search, $start, $length, $orderColumn, $orderDir);
+        $result = $this->modelModel->get_list($search, $start, $length, $orderColumn, $orderDir);
         
         return response()->json([
             'draw'            => $draw,
@@ -110,7 +110,7 @@ class CountryController extends Controller {
         }
 
         // Проверяем есть ли уже такая запись
-        $countryId = $this->countryModel->get_id_from_name($countryName);
+        $countryId = $this->modelModel->get_id_from_name($countryName);
 
         if (is_numeric($countryId)) {
             return response()->json([
@@ -120,7 +120,7 @@ class CountryController extends Controller {
         }
 
         // Добавляем новую запись
-        $result = $this->countryModel->create($countryName);
+        $result = $this->modelModel->create($countryName);
 
         if ($result === true) {
             return response()->json([
@@ -161,7 +161,7 @@ class CountryController extends Controller {
         $request->validate(['id' => 'integer']);
 
         // Получаем информацию
-        $country = $this->countryModel->get_info_from_id($countryId);
+        $country = $this->modelModel->get_info_from_id($countryId);
 
         if (!$country) {
             return response()->json([
@@ -201,7 +201,7 @@ class CountryController extends Controller {
         }
 
         // Обновляем даные
-        $result = $this->countryModel->edit($countryId, $countryName);
+        $result = $this->modelModel->edit($countryId, $countryName);
 
         if ($result === true) {
             return response()->json([
@@ -232,7 +232,7 @@ class CountryController extends Controller {
             usleep(500000);
         }
 
-        $result = $this->countryModel->remove($id);
+        $result = $this->modelModel->remove($id);
 
         if ($result === true) {
             if (request()->ajax()) {

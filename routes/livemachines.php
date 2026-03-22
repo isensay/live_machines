@@ -6,6 +6,7 @@
 
 use App\Http\Controllers\Livemachines\TechController;    // Технические характеристики
 use App\Http\Controllers\Livemachines\CompController;    // Комплектации
+use App\Http\Controllers\Livemachines\ModelController; // Страны
 use App\Http\Controllers\Livemachines\CountryController; // Страны
 use App\Http\Controllers\Livemachines\SpravController;   // ВРЕМЕННЫЙ КОНТРОЛЛЕР
 
@@ -70,6 +71,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
     });
 
+    //  Модели
+    Route::prefix('livemachines/sprav')->name('lm_model_')->group(function () {
+        Route::prefix('model')->group(function () {
+            // Основная страница
+            Route::get('/', [ModelController::class, 'index'])->name('index');
+
+            // Ajax - маршруты
+            Route::middleware('ajax')->group(function () {
+                Route::get('/data',    [ModelController::class, 'data'])->name('data');     // Получение списка моделей
+                Route::post('/create', [ModelController::class, 'create'])->name('create'); // Создание модели (сохранение)
+
+                // Маршруты с ID
+                Route::whereNumber('id')->group(function () {
+                    Route::get('/edit/{id}',    [ModelController::class, 'edit'])->name('edit');       // Редактирование модели (загрузка информации в окно)
+                    Route::post('/update/{id}', [ModelController::class, 'update'])->name('update');   // Редактирование модели (сохранение)
+                    Route::delete('/{id}',      [ModelController::class, 'remove'])->name('remove'); // Удаление модели
+                });
+            });
+        });
+    });
+
     // Страны
     Route::prefix('livemachines/sprav')->name('lm_country_')->group(function () {
         Route::prefix('country')->group(function () {
@@ -83,9 +105,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
                 // Маршруты с ID
                 Route::whereNumber('id')->group(function () {
-                    Route::get('/edit/{id}',    [CountryController::class, 'edit'])->name('edit');       // Редактирование страны (загрузка информации в окно)
-                    Route::post('/update/{id}', [CountryController::class, 'update'])->name('update');   // Редактирование страны (сохранение)
-                    Route::delete('/{id}',      [CountryController::class, 'destroy'])->name('destroy'); // Удаление страны
+                    Route::get('/edit/{id}',    [CountryController::class, 'edit'])->name('edit');     // Редактирование страны (загрузка информации в окно)
+                    Route::post('/update/{id}', [CountryController::class, 'update'])->name('update'); // Редактирование страны (сохранение)
+                    Route::delete('/{id}',      [CountryController::class, 'remove'])->name('remove'); // Удаление страны
                 });
             });
         });

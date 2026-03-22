@@ -43,7 +43,7 @@ class HomeController extends Controller
         //$currentLocale = app()->getLocale();
         //dump($currentLocale);
         return view('home', [
-            'title'       => 'Adoxa - Главная страница',
+            'title'       => 'Главная страница',
             'description' => 'Добро пожаловать в Adoxa - ваш новый проект на Laravel',
             'system' => [
                 'diskTotal'        => round($metrics['disk']['total_gb'], 0),
@@ -60,7 +60,7 @@ class HomeController extends Controller
             'stat' => [
                 'tech'  => $this->techModel->get_list('all', -1, 0, 1, '', 'paramName', 'asc')['total'],
                 'comp'  => $this->compModel->get_list('all', -1, 0, 1, '', 'paramName', 'asc')['total'],
-                'model' => $this->modelModel->get_list(0, 1, '', 'name', 'asc')['total'],
+                'model' => $this->modelModel->get_list('', 0, 1, 'name', 'asc')['total'],
                 'manuf' => count($manufs)
             ],
 

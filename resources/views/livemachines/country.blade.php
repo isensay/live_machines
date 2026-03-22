@@ -37,7 +37,7 @@
                                         data-create-url="{{ route('lm_country_create') }}"
                                         data-edit-url="{{ route('lm_country_edit', ['id' => 'REPLACE_WITH_ID']) }}"
                                         data-update-url={{ route('lm_country_update', ['id' => 'REPLACE_WITH_ID']) }}
-                                        data-delete-url={{ route('lm_country_destroy', ['id' => 'REPLACE_WITH_ID']) }}
+                                        data-delete-url={{ route('lm_country_remove', ['id' => 'REPLACE_WITH_ID']) }}
                                     >
                                         <thead>
                                             <tr>
