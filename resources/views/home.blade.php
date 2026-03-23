@@ -42,7 +42,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['memoryUsedPer'] }}%">
-                            <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#6c757d"
+                            <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#f7b84b"
                                 data-bgColor="#ebeff2" value="{{ $system['memoryUsedPer'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
                                 data-thickness=".15"/>
@@ -61,7 +61,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['redisUsedPer'] }}%">
-                            <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#f06b78"
+                            <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#1abc9c"
                                 data-bgColor="#fbdee1" value="{{ $system['redisUsedPer'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
                                 data-thickness=".15"/>
@@ -80,7 +80,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['mysqlUsedPer'] }}%">
-                            <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#6c757d"
+                            <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#6559cc"
                                 data-bgColor="#ebeff2" value="{{ $system['mysqlUsedPer'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
                                 data-thickness=".15"/>
@@ -304,7 +304,7 @@
         <div class="col-xl-2 col-md-6">
             <div class="widget-simple text-center card">
                 <div class="card-body">
-                    <h3 class="text-warning mt-0"><span data-plugin="counterup">{{ $stat['manuf'] }}</span> из 1800</h3>
+                    <h3 class="text-warning mt-0"><span data-plugin="counterup">{{ $stat['file'] }}</span></h3>
                     <p class="text-muted mb-0">Файлов КП</p>
                 </div>
             </div>
@@ -313,7 +313,7 @@
         <div class="col-xl-2 col-md-6">
             <div class="widget-simple text-center card">
                 <div class="card-body">
-                    <h3 class="text-muted mt-0"><span data-plugin="counterup">{{ $stat['manuf'] }}</span></h3>
+                    <h3 class="text-info mt-0"><span data-plugin="counterup">{{ $stat['group'] }}</span></h3>
                     <p class="text-muted mb-0">Гпупп</p>
                 </div>
             </div>
@@ -322,7 +322,7 @@
         <div class="col-xl-2 col-md-6">
             <div class="widget-simple text-center card">
                 <div class="card-body">
-                    <h3 class="text-success mt-0"><span data-plugin="counterup">{{ $stat['tech'] }}</span></h3>
+                    <h3 class="text-success mt-0" style="color:#37cde6;"><span data-plugin="counterup">{{ $stat['tech'] }}</span></h3>
                     <p class="text-muted mb-0">Тех. характеристик</p>
                 </div>
             </div>

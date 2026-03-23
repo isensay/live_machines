@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Services\HealthCheckService;
+use App\Models\Livemachines\FileModel;
+use App\Models\Livemachines\GroupModel;
 use App\Models\Livemachines\ParamModel;
 use App\Models\Livemachines\ModelModel;
 use App\Models\Livemachines\ManufModel;
@@ -15,6 +17,8 @@ class HomeController extends Controller
     protected HealthCheckService $healthService;
 
     private $dbConnection;
+    private $fileModel;
+    private $groupModel;
     private $techModel;
     private $compModel;
     private $modelModel;
@@ -24,6 +28,8 @@ class HomeController extends Controller
         $this->healthService = $healthService;
 
         $this->dbConnection = DB::connection('livemachines');
+        $this->fileModel    = new FileModel([], $this->dbConnection);
+        $this->groupModel   = new GroupModel([], $this->dbConnection, 1);
         $this->techModel    = new ParamModel([], $this->dbConnection, 1);
         $this->compModel    = new ParamModel([], $this->dbConnection, 2);
         $this->modelModel   = new ModelModel([], $this->dbConnection);
@@ -62,6 +68,8 @@ class HomeController extends Controller
             'manufs' => $manufs,
 
             'stat' => [
+                'file'  => $this->fileModel->get_list()['total'],
+                'group' => count($this->groupModel->get_groups(0, false)) - 1,
                 'tech'  => $this->techModel->get_list('all', -1, 0, 1, '', 'paramName', 'asc')['total'],
                 'comp'  => $this->compModel->get_list('all', -1, 0, 1, '', 'paramName', 'asc')['total'],
                 'model' => $this->modelModel->get_list('', 0, 1, 'name', 'asc')['total'],
