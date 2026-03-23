@@ -37,6 +37,8 @@
                                 <option value="all" selected>- Все параметры -</option>
                                 <option value="check">- Проверенные -</option>
                                 <option value="nocheck">- Непроверенные -</option>
+                                <option value="0">- Без группы -</option>
+                                <option value="groupandno">- С группой и без -</option>
                                 @foreach($groups as $group)
                                     <option value="{{ $group->id }}">{{ $group->name }}</option>
                                 @endforeach

@@ -49,8 +49,11 @@ class HomeController extends Controller
         //$currentLocale = app()->getLocale();
         //dump($currentLocale);
         return view('home', [
+            // Заголовки
             'title'       => 'Главная страница',
-            'description' => 'Добро пожаловать в Adoxa - ваш новый проект на Laravel',
+            'description' => '',
+
+            // Статистика по системе
             'system' => [
                 'diskTotal'     => round($metrics['disk']['total_gb'], 0),
                 'diskUsed'      => round($metrics['disk']['used_gb'], 1),
@@ -65,17 +68,21 @@ class HomeController extends Controller
                 'mysqlUsed'     => round($metrics['mysql']['total_databases']['size_mb'], 1),
                 'mysqlUsedPer'  => round(($metrics['mysql']['total_databases']['size_gb'] / $metrics['mysql']['disk_usage']['total_gb']) * 100, 1),
             ],
+
+            // Список производителей
             'manufs' => $manufs,
 
+            // Статистика 
             'stat' => [
                 'file'  => $this->fileModel->get_list()['total'],
-                'group' => count($this->groupModel->get_groups(0, false)) - 1,
+                'group' => $this->groupModel->get_list()['total'],
                 'tech'  => $this->techModel->get_list('all', -1, 0, 1, '', 'paramName', 'asc')['total'],
                 'comp'  => $this->compModel->get_list('all', -1, 0, 1, '', 'paramName', 'asc')['total'],
                 'model' => $this->modelModel->get_list('', 0, 1, 'name', 'asc')['total'],
                 'manuf' => count($manufs)
             ],
 
+            // Информация о системе
             'features' => [
                 'Laravel ' . app()->version(),
                 'PHP ' . PHP_VERSION,

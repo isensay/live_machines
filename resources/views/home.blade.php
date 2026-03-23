@@ -5,7 +5,6 @@
 
 {{-- Page Content --}}
 @section('page_content')
-    
     <!-- Заголовок страницы -->
     <div class="row">
         <div class="col-12">
@@ -601,13 +600,11 @@
         </div> <!-- end col -->
     </div>
     --}}
-
 @endsection
 
 
 {{-- Page Java Script --}}
 @section('page_java_script')
-
     <!-- KNOB JS -->
     <script src="/source/base/libs/jquery-knob/jquery.knob.min.js"></script>
     <!-- Apex js-->
@@ -621,7 +618,6 @@
     <!-- Dashboard init-->
     <script src="/source/base/js/pages/dashboard-sales.init.js"></script>
     --}}
-
 @endsection
 
 

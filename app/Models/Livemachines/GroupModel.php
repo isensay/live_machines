@@ -42,44 +42,89 @@ class GroupModel extends Model
      * Получение списка всех групп технических характеристик
      * Получение списка всех групп технических характеристик к которым привязан указанный технический параметр
      */
-    public function get_groups($paramId = 0, $virtualItems = true) {
-        if ($paramId > 0) {
-            $sqlWhereParam = "AND `dirty_param_dirty_param_name_id` = " . $this->pdo->quote((int)$paramId);
+    public function get_list($isHaveParam = false, $search = "", $start = 0, $length = 0, $orderColumn = 'name', $orderDir = 'asc') {
+        // Допустимые названия полей
+        $columns = [
+            0 => 'name'
+        ];
+
+        // Условие по поиску
+        $sqlWhereSearch  = "";
+        if (!empty($search)) {
+            $searchTerm     = $this->pdo->quote('%' . $search . '%');
+            $sqlWhereSearch = "AND `dirty_group_name` LIKE {$searchTerm}";
+        }
+
+        // Сортировка
+        if (isset($columns[$orderColumn])) {
+            $orderField = $columns[$orderColumn];
+
+            // Проверяем направление сортировки
+            $orderDir = strtolower($orderDir);
+            if (!in_array($orderDir, ['asc', 'desc'])) {
+                $orderDir = 'asc'; // Значение по умолчанию
+            }
+
+            $sqlSort = " ORDER BY `{$orderField}` {$orderDir}";
+        } else {
+            $sqlSort = "";
+        }
+
+        if ($isHaveParam === true) {
             $sqlJoinParam  = "INNER JOIN `dirty_param` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_dirty_type_id` = `dirty_param_dirty_type_id` AND `dirty_param_remove_user_id` = 0)";
         } else {
-            $sqlWhereParam = "";
             $sqlJoinParam  = "";
         }
 
-        if ($virtualItems) {
-            $sqlVirtualItems = "UNION (SELECT 'groupandno' as `id`, '- С группой и без -' as `name`)";
-            $sqlJoinParam    = "INNER JOIN `dirty_param` ON (`dirty_group_id` = `dirty_param_dirty_group_id` AND `dirty_group_dirty_type_id` = `dirty_param_dirty_type_id` AND `dirty_param_remove_user_id` = 0)";
-        } else {
-            $sqlVirtualItems = "";
-        }
+        // Лимит
+        $sqlLimit = ($length > 0) ? "LIMIT {$start}, {$length}" : "";
 
-        $sqlVirtualItems = ($virtualItems === true) ? "UNION (SELECT 'groupandno' as `id`, '- С группой и без -' as `name`)" : "";
-
-        $baseSql = "
-            (SELECT 'none' as `id`, '- Без группы -' as `name`)
-            {$sqlVirtualItems}
-            UNION
-            (
-                SELECT
-                    `dirty_group_id`   as `id`,
-                    `dirty_group_name` as `name`
-                FROM `dirty_group`
-                    {$sqlJoinParam}
-                WHERE 1
-                    {$sqlWhereParam}
-                    AND `dirty_group_dirty_type_id`  = {$this->paramTypeId}
-                    AND `dirty_group_remove_user_id` = 0
-                GROUP BY
-                    `id`
-                ORDER BY
-                    `name` ASC
-            ) 
+        $sql = "
+            SELECT
+                SQL_CALC_FOUND_ROWS
+                `dirty_group_id`   as `id`,
+                `dirty_group_name` as `name`
+            FROM `dirty_group`
+            {$sqlJoinParam}
+            WHERE 1
+                {$sqlWhereSearch}
+                AND `dirty_group_dirty_type_id`  = {$this->paramTypeId}
+                AND `dirty_group_remove_user_id` = 0
+            GROUP BY
+                `id`
+            {$sqlSort}
+            {$sqlLimit}
         ";
+
+        // Выполняем финальный запрос
+        $data = $this->db->select($sql);
+
+        // Получаем счетчики
+        $filteredResult = $this->db->selectOne("SELECT FOUND_ROWS() as `total`");
+        $totalRecords   = $filteredResult->total ?? 0;
+        
+        return [
+            'data'  => $data,
+            'total' => $totalRecords,
+        ];
+
+        /*
+        $baseSql = "
+            SELECT
+                `dirty_group_id`   as `id`,
+                `dirty_group_name` as `name`
+            FROM `dirty_group`
+                {$sqlJoinParam}
+            WHERE 1
+                {$sqlWhereParam}
+                AND `dirty_group_dirty_type_id`  = {$this->paramTypeId}
+                AND `dirty_group_remove_user_id` = 0
+            GROUP BY
+                `id`
+            ORDER BY
+                `name` ASC
+        ";
+        */
 
         return $this->db->select($baseSql);
     }

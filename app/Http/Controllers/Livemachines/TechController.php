@@ -33,7 +33,7 @@ class TechController extends Controller {
     public function index() {
         return view('livemachines/tech', [
             'title'  => 'Справочник технических характеристик',
-            'groups' => $this->groupModel->get_groups(),
+            'groups' => $this->groupModel->get_list(true)['data'],
         ]);
     }
 
@@ -69,9 +69,9 @@ class TechController extends Controller {
      */
     public function references() {
         try {
-            $groups = $this->groupModel->get_groups(0, false); // Получение списка всех групп технических характеристик
-            $units  = $this->paramModel->get_units();          // Получение списка всех единиц измерения
-            $files  = $this->paramModel->get_files();          // Получение списка всех файлов
+            $groups = $this->groupModel->get_list()['data']; // Получение списка всех групп технических характеристик
+            $units  = $this->paramModel->get_units();        // Получение списка всех единиц измерения
+            $files  = $this->paramModel->get_files();        // Получение списка всех файлов
         } catch(\Exception $e) {
             Log::error('Error getting references: ' . $e->getMessage());
             

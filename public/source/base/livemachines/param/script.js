@@ -233,11 +233,19 @@ $(document).ready(function() {
     
     // ===== ЗАГРУЗКА СПРАВОЧНИКОВ =====
     function loadReferences() {
+        
         $.ajax({
             url: referencesUrl,
             type: 'GET',
             success: (response) => {
                 if (response.success) {
+                    // Добавляем элемент
+                    if (response.data.groups && Array.isArray(response.data.groups)) {
+                        response.data.groups.unshift({
+                            id: 0,
+                            name: '- Выберите группу -'
+                        });
+                    }
                     references.groups = response.data.groups || [];
                     references.units = response.data.units || [];
                     references.files = response.data.files || [];

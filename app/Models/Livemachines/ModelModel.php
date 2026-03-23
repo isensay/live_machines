@@ -37,7 +37,6 @@ class ModelModel extends Model
      * Получение списка моделей
      */
     public function get_list($search, $start, $length, $orderColumn, $orderDir) {
-        Log::debug('start: ' . $start);
         // Допустимые названия полей
         $columns = [
             0 => 'name'
@@ -64,6 +63,7 @@ class ModelModel extends Model
         } else {
             $sqlSort = "";
         }
+        
         $sql =
         "
         SELECT

@@ -88,17 +88,14 @@ class ParamModel extends Model
         // Условие по группе
         $sqlWhereGroup = "";
         $sqlHaving     = "";
-        if ($groupId == 'none') {
-            $sqlWhereGroup = "AND `dirty_param_dirty_group_id` = 0";
+        if (is_numeric($groupId) && (int)$groupId >= 0) {
+            $sqlWhereGroup = "AND `dirty_param_dirty_group_id` = ".$this->pdo->quote((int)$groupId);
         } elseif ($groupId == 'check') {
             $sqlWhereGroup = "AND `dirty_param_checked` = {$this->paramTypeId}";
         } elseif ($groupId == 'nocheck') {
             $sqlWhereGroup = "AND `dirty_param_checked` = 0";
         } elseif ($groupId == 'groupandno') {
             $sqlHaving = "HAVING `groupMinId` = 0 AND `groupMaxId` > 0";
-        } else {
-            $groupIdInt = (int)$groupId;
-            $sqlWhereGroup = ($groupIdInt > 0) ? "AND `dirty_param_dirty_group_id` = ".$this->pdo->quote((int)$groupIdInt) : "";
         }
 
         // Условие по виду параметра (основной или дополнительный)
