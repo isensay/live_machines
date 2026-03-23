@@ -22,14 +22,14 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['diskUsed'] }}%">
+                        <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['diskUsedPer'] }}%">
                             <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#f06b78"
-                                data-bgColor="#fbdee1" value="{{ $system['diskUsed'] }}"
+                                data-bgColor="#fbdee1" value="{{ $system['diskUsedPer'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
                                 data-thickness=".15"/>
                         </div>
                         <div class="text-end">
-                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['diskTotal'] }} </span> Гб </h3>
+                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['diskUsed'] }} </span> из <span data-plugin="counterup">{{ $system['diskTotal'] }}</span> Гб </h3>
                             <p class="text-muted mb-0">Размер диска</p>
                         </div>
                     </div>
@@ -41,14 +41,14 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['memoryUsed'] }}%">
+                        <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['memoryUsedPer'] }}%">
                             <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#6c757d"
-                                data-bgColor="#ebeff2" value="{{ $system['memoryUsed'] }}"
+                                data-bgColor="#ebeff2" value="{{ $system['memoryUsedPer'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
                                 data-thickness=".15"/>
                         </div>
                         <div class="text-end">
-                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['memoryTotal'] }}</span> Гб </h3>
+                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['memoryUsed'] }}</span> из <span data-plugin="counterup">{{ $system['memoryTotal'] }}</span> Гб </h3>
                             <p class="text-muted mb-0">Оперативная память</p>
                         </div>
                     </div>
@@ -60,14 +60,14 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['redisUsed'] }}%">
+                        <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['redisUsedPer'] }}%">
                             <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#f06b78"
-                                data-bgColor="#fbdee1" value="{{ $system['redisUsed'] }}"
+                                data-bgColor="#fbdee1" value="{{ $system['redisUsedPer'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
                                 data-thickness=".15"/>
                         </div>
                         <div class="text-end">
-                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['redisTotal'] }}</span> Мб </h3>
+                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['redisUsed'] }}</span> из <span data-plugin="counterup">{{ $system['redisTotal'] }}</span> Мб </h3>
                             <p class="text-muted mb-0">База данных Redis</p>
                         </div>
                     </div>
@@ -79,14 +79,14 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['mysqlUsed'] }}%">
+                        <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['mysqlUsedPer'] }}%">
                             <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#6c757d"
-                                data-bgColor="#ebeff2" value="{{ $system['mysqlUsed'] }}"
+                                data-bgColor="#ebeff2" value="{{ $system['mysqlUsedPer'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
                                 data-thickness=".15"/>
                         </div>
                         <div class="text-end">
-                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['mysqlTotal'] }}</span> Мб </h3>
+                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['mysqlUsed'] }}</span> Мб из <span data-plugin="counterup">{{ $system['mysqlTotal'] }}</span> Гб </h3>
                             <p class="text-muted mb-0">Базы данных MySQL</p>
                         </div>
                     </div>
