@@ -47,8 +47,9 @@
                         <ul class="nav-second-level">
                             {{--
                             <li>
-                                <a href="#">Группы параметров</a>
+                                <a href="{{ route('lm_group_index') }}">Группы параметров</a>
                             </li>
+                            
                             <li>
                                 <a href="#">Единицы измерения</a>
                             </li>

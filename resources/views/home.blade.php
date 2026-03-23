@@ -81,13 +81,13 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="knob-chart invisible" dir="ltr">
                             <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#6c757d"
-                                data-bgColor="#ebeff2" value="{{ $system['sslDaysRemaining'] }}"
+                                data-bgColor="#ebeff2" value="{{ $system['mysqlUsed'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
                                 data-thickness=".15"/>
                         </div>
                         <div class="text-end">
-                            <h3 style="display:none;" class="mb-1 mt-0"> {{ $system['sslExpiryDate'] }} <span data-plugin="counterup">0</span> </h3>
-                            <p class="text-muted mb-1">SSL (дата окончания сертификата):<br>{{ $system['sslExpiryDate'] }}</p>
+                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['mysqlTotal'] }}</span> Гб </h3>
+                            <p class="text-muted mb-0">База данных MySQL</p>
                         </div>
                     </div>
                 </div>
@@ -299,16 +299,34 @@
     <!-- end row -->
 
     <div class="row">
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-2 col-md-6">
             <div class="widget-simple text-center card">
                 <div class="card-body">
-                    <h3 class="text-success mt-0"><span data-plugin="counterup">{{ $stat['tech'] }}</span></h3>
-                    <p class="text-muted mb-0">Технических характеристик</p>
+                    <h3 class="text-warning mt-0"><span data-plugin="counterup">{{ $stat['manuf'] }}</span> из 1800</h3>
+                    <p class="text-muted mb-0">Файлов КП</p>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-2 col-md-6">
+            <div class="widget-simple text-center card">
+                <div class="card-body">
+                    <h3 class="text-muted mt-0"><span data-plugin="counterup">{{ $stat['manuf'] }}</span></h3>
+                    <p class="text-muted mb-0">Гпупп</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-6">
+            <div class="widget-simple text-center card">
+                <div class="card-body">
+                    <h3 class="text-success mt-0"><span data-plugin="counterup">{{ $stat['tech'] }}</span></h3>
+                    <p class="text-muted mb-0">Тех. характеристик</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-6">
             <div class="widget-simple text-center card">
                 <div class="card-body">
                     <h3 class="text-primary mt-0"><span data-plugin="counterup">{{ $stat['comp'] }}</span></h3>
@@ -317,7 +335,7 @@
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-2 col-md-6">
             <div class="widget-simple text-center card">
                 <div class="card-body">
                     <h3 class="text-pink mt-0"><span data-plugin="counterup">{{ $stat['model'] }}</span></h3>
@@ -326,7 +344,7 @@
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-2 col-md-6">
             <div class="widget-simple text-center card">
                 <div class="card-body">
                     <h3 class="text-purple mt-0"><span data-plugin="counterup">{{ $stat['manuf'] }}</span></h3>

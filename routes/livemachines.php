@@ -4,9 +4,10 @@
  * Маршруты для /livemachines/
  */
 
+use App\Http\Controllers\Livemachines\GroupController;   // Комплектации
 use App\Http\Controllers\Livemachines\TechController;    // Технические характеристики
 use App\Http\Controllers\Livemachines\CompController;    // Комплектации
-use App\Http\Controllers\Livemachines\ModelController; // Страны
+use App\Http\Controllers\Livemachines\ModelController;   // Страны
 use App\Http\Controllers\Livemachines\CountryController; // Страны
 use App\Http\Controllers\Livemachines\SpravController;   // ВРЕМЕННЫЙ КОНТРОЛЛЕР
 
@@ -19,8 +20,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('livemachines/sprav')->name('lm_')->group(function () {
         // Базовые справочники
         Route::get('/manuf',       [SpravController::class,   'manuf_list'])->name('manuf_list');
-        Route::get('/model',       [SpravController::class,   'model_list'])->name('model_list');
         Route::get('/group',       [SpravController::class,   'group_list'])->name('group_list');
+    });
+
+    //  Группы параметров
+    Route::prefix('livemachines/sprav')->name('lm_group_')->group(function () {
+        Route::prefix('group')->group(function () {
+            // Основная страница
+            Route::get('/', [GroupController::class, 'index'])->name('index');
+
+            // Ajax - маршруты
+            Route::middleware('ajax')->group(function () {
+                Route::get('/data',    [GroupController::class, 'data'])->name('data');     // Получение списка групп
+                Route::post('/create', [GroupController::class, 'create'])->name('create'); // Создание груааы (сохранение)
+
+                // Маршруты с ID
+                Route::whereNumber('id')->group(function () {
+                    Route::get('/edit/{id}',    [GroupController::class, 'edit'])->name('edit');     // Редактирование груааы (загрузка информации в окно)
+                    Route::post('/update/{id}', [GroupController::class, 'update'])->name('update'); // Редактирование груааы (сохранение)
+                    Route::delete('/{id}',      [GroupController::class, 'remove'])->name('remove'); // Удаление груааы
+                });
+            });
+        });
     });
 
     // Технические характеристики
