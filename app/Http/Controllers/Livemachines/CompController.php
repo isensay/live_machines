@@ -32,7 +32,8 @@ class CompController extends Controller {
     public function index() {
         return view('livemachines/comp', [
             'title'  => 'Справочник комплектаций',
-            'groups' => $this->groupModel->get_list(true)['data'],
+            'typeId' => $this->paramTypeId,
+            'groups' => $this->groupModel->get_list($this->paramTypeId, true)['data'],
         ]);
     }
 
@@ -68,9 +69,9 @@ class CompController extends Controller {
      */
     public function references() {
         try {
-            $groups = $this->groupModel->get_list()['data']; // Получение списка всех групп технических характеристик
-            $units  = $this->paramModel->get_units();        // Получение списка всех единиц измерения
-            $files  = $this->paramModel->get_files();        // Получение списка всех файлов
+            $groups = $this->groupModel->get_list($this->paramTypeId)['data']; // Получение списка всех групп технических характеристик
+            $units  = $this->paramModel->get_units(); // Получение списка всех единиц измерения
+            $files  = $this->paramModel->get_files(); // Получение списка всех файлов
         } catch(\Exception $e) {
             Log::error('Error getting references: ' . $e->getMessage());
             
@@ -260,44 +261,6 @@ class CompController extends Controller {
             return redirect()
                 ->route('lm_tech.list')
                 ->with('error', $result);
-        }
-    }
-
-    /**
-     * Создание новой группы
-     */
-    public function create_group(Request $request) {
-        $request->validate([
-            'name' => 'required|string|max:255'
-        ]);
-
-        $name = $request->name ?? '';
-        $name = preg_replace('/\s+/', ' ', trim($name));
-        $name = trim($name);
-
-        if (mb_strlen($name) == 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Не указано название группы'
-            ]);
-        }
-
-        $groupId = $this->groupModel->create($name);
-
-        if (is_numeric($groupId)) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Группа успешно создана',
-                'group' => [
-                    'id'   => $groupId,
-                    'name' => $name
-                ]
-            ]);
-        } else {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка: ' . $groupId
-            ]);
         }
     }
 

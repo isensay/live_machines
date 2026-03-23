@@ -129,6 +129,7 @@ $(document).ready(function() {
     const $table         = $('#basic-datatable');
     const dataUrl        = $table.data('url');
 
+    const typeId         = $table.data('type');
     const referencesUrl  = $table.data('references-url');
     const createUrl      = $table.data('create-url');
     const editUrl        = $table.data('edit-url');
@@ -173,11 +174,15 @@ $(document).ready(function() {
                 { 
                     data: 'groups', 
                     name: 'groups',
+                    orderable: false,
+                    searchable: false,
                     render: (data) => data || '<span class="text-muted">-</span>' 
                 },
                 { 
                     data: 'files',  
                     name: 'files',
+                    orderable: false,
+                    searchable: false,
                     render: (data) => data || '<span class="text-muted">-</span>' 
                 },
                 {
@@ -1006,8 +1011,9 @@ $(document).ready(function() {
             url: groupCreateUrl,
             type: 'POST',
             data: {
-                '_token': csrfToken,
-                'name': groupName
+                '_token':  csrfToken,
+                'type_id': typeId,
+                'name':    groupName
             },
             success: (response) => {
                 if (response.success) {

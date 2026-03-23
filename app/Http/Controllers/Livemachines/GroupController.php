@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Контроллер для управления справочником стран
+ * Контроллер для управления справочником групп
  */
 
 namespace App\Http\Controllers\Livemachines;
@@ -16,7 +16,7 @@ use App\Models\Livemachines\GroupModel;
 class GroupController extends Controller {
     private $techParam = null;
     private $dbConnection;
-    private $modelModel;
+    private $groupModel;
 
     public function __construct() {
         $this->dbConnection = DB::connection('livemachines');
@@ -27,7 +27,7 @@ class GroupController extends Controller {
      * Список стран (основная страница)
      */
     public function index() {
-        return view('livemachines/model', [
+        return view('livemachines/group', [
             'title' => 'Справочник групп параметров'
         ]);
     }
@@ -41,6 +41,9 @@ class GroupController extends Controller {
             usleep(500000);
         }
 
+        // Тип
+        $typeId = (int)$request->get('type_id', 0);
+
         // Параметры DataTable
         $draw        = $request->get('draw');
         $start       = (int)$request->get('start', 0);
@@ -50,7 +53,7 @@ class GroupController extends Controller {
         $orderDir    = $request->get('order')[0]['dir'] ?? 'asc';
 
         // Получаем список стран
-        $result = $this->modelModel->get_list($search, $start, $length, $orderColumn, $orderDir);
+        $result = $this->groupModel->get_list($typeId, false, $search, $start, $length, $orderColumn, $orderDir);
         
         return response()->json([
             'draw'            => $draw,
@@ -63,11 +66,11 @@ class GroupController extends Controller {
     /**
      * Валидация и подготовка входных данных
      */
-    private function validate_and_prepare($request, $countryId = null) {
-        if ($countryId == 'new') {
-            $countryId = 0;
-        } elseif (is_numeric($countryId) && (int)$countryId > 0) {
-            $countryId = (int)$countryId;
+    private function validate_and_prepare($request, $groupId = null) {
+        if ($groupId == 'new') {
+            $groupId = 0;
+        } elseif (is_numeric($groupId) && (int)$groupId > 0) {
+            $groupId = (int)$groupId;
         } else {
             return 'Неверный идентификатор параметра';
         }
@@ -79,13 +82,18 @@ class GroupController extends Controller {
 
         // Валидация
         $request->validate([
-            'name' => 'required|string|max:255',
+            'type_id' => 'integer|in:1,2',
+            'name'    => 'required|string|max:255',
         ]);
 
-        $countryName = $request->name ?? '';
-        $countryName = preg_replace('/\s+/', ' ', $countryName);
+        // Тип
+        $typeId = (int)$request->type_id ?? 0;
 
-        return ['name' => $countryName];
+        // Наименование
+        $groupName = $request->name ?? '';
+        $groupName = preg_replace('/\s+/', ' ', $groupName);
+
+        return ['typeId' => $typeId, 'name' => $groupName];
     }
 
     /**
@@ -101,7 +109,8 @@ class GroupController extends Controller {
         $validAndPrepareData = $this->validate_and_prepare($request, 'new');
 
         if (is_array($validAndPrepareData)) {
-            $countryName = $validAndPrepareData['name'];
+            $typeId    = $validAndPrepareData['typeId'];
+            $groupName = $validAndPrepareData['name'];
         } else {
             return response()->json([
                 'success' => false,
@@ -110,27 +119,31 @@ class GroupController extends Controller {
         }
 
         // Проверяем есть ли уже такая запись
-        $countryId = $this->modelModel->get_id_from_name($countryName);
+        $groupId = $this->groupModel->get_id_from_name($typeId, $groupName);
 
-        if (is_numeric($countryId)) {
+        if (is_numeric($groupId)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка: запись уже существует'
             ]);
         }
 
-        // Добавляем новую запись
-        $result = $this->modelModel->create($countryName);
+        // Создаем группу
+        $groupId = $this->groupModel->get_id_from_name($typeId, $groupName, true);
 
-        if ($result === true) {
+        if (is_numeric($groupId)) {
             return response()->json([
                 'success' => true,
-                'message' => ''
+                'message' => '',
+                'group' => [
+                    'id'   => $groupId,
+                    'name' => mb_strtoupper($groupName)
+                ]
             ]);
         } else {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка: '.$result
+                'message' => 'Ошибка: '.$groupId
             ]);
         }
     }
@@ -138,14 +151,19 @@ class GroupController extends Controller {
     /**
      * Получить данные для редактирования
      */
-    public function edit(Request $request, int $countryId) {
+    public function edit(Request $request, int $groupId) {
         // Искусственная задержка (для режима разработки)
         if (config('app.debug')) {
             usleep(500000);
         }
 
+        // Тип
+        $typeId = (int)$request->get('type_id', 0);
+
+        Log::debug('type_id: '.$typeId);
+
         // Проверяем, это создание нового параметра?
-        $isNew = $request->get('new') === 'true' || $countryId === null;
+        $isNew = $request->get('new') === 'true' || $groupId === null;
 
         if ($isNew) {
             return response()->json([
@@ -161,9 +179,9 @@ class GroupController extends Controller {
         $request->validate(['id' => 'integer']);
 
         // Получаем информацию
-        $country = $this->modelModel->get_info_from_id($countryId);
+        $group = $this->groupModel->get_info_from_id($groupId);
 
-        if (!$country) {
+        if (!$group) {
             return response()->json([
                 'success' => false,
                 'message' => 'Параметр не найден'
@@ -173,8 +191,8 @@ class GroupController extends Controller {
         return response()->json([
             'success' => true,
             'data' => [
-                'id'   => $country->id,
-                'name' => $country->name,
+                'id'   => $group->id,
+                'name' => $group->name,
             ]
         ]);
     }
@@ -182,17 +200,17 @@ class GroupController extends Controller {
     /**
      * Сохранение изменений имеющейся записи
      */
-    public function update(Request $request, $countryId) {
+    public function update(Request $request, $groupId) {
         // Искусственная задержка (для режима разработки)
         if (config('app.debug')) {
             usleep(500000);
         }
 
         // Валидируем и подготавливаем входные данные
-        $validAndPrepareData = $this->validate_and_prepare($request, $countryId);
+        $validAndPrepareData = $this->validate_and_prepare($request, $groupId);
 
         if (is_array($validAndPrepareData)) {
-            $countryName = $validAndPrepareData['name'];
+            $groupName = $validAndPrepareData['name'];
         } else {
             return response()->json([
                 'success' => false,
@@ -201,7 +219,7 @@ class GroupController extends Controller {
         }
 
         // Обновляем даные
-        $result = $this->modelModel->edit($countryId, $countryName);
+        $result = $this->groupModel->edit($groupId, $groupName);
 
         if ($result === true) {
             return response()->json([
@@ -214,17 +232,10 @@ class GroupController extends Controller {
                 'message' => 'Ошибка: '.$result
             ]);
         }
-
-        if (is_string($validAndPrepareData)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка: ' . $validAndPrepareData
-            ]);
-        }
     }
 
     /**
-     * Удаление страны
+     * Удаление
      */
     public function remove(int $id) {
         // Искусственная задержка (для режима разработки)
@@ -232,31 +243,23 @@ class GroupController extends Controller {
             usleep(500000);
         }
 
-        $result = $this->modelModel->remove($id);
+        $result = $this->groupModel->remove($id);
 
         if ($result === true) {
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Запись успешно удалена',
-                    'id' => $id
-                ]);
-            }
-
-            return redirect()
-                ->route('lm_tech.list')
-                ->with('success', 'Запись успешно удалена');
-        } else {
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $result
-                ], 500);
-            }
-            
-            return redirect()
-                ->route('lm_tech.list')
-                ->with('error', $result);
+            return response()->json([
+                'success' => true,
+                'message' => 'Запись успешно удалена',
+                'id' => $id
+            ]);
         }
+
+        return response()->json([
+            'success' => false,
+            'message' => $result
+        ], 500);
     }
+
+
+
+    
 }

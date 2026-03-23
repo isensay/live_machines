@@ -80,13 +80,14 @@
                                 <div class="card-body">
                                     <table id="basic-datatable" 
                                         class="table dt-responsive nowrap w-100"
+                                        data-type="{{ $typeId }}"
                                         data-url="{{ route('lm_comp_data') }}"
                                         data-references-url="{{ route('lm_comp_references') }}"
                                         data-update-url={{ route('lm_comp_update', ['id' => 'REPLACE_WITH_ID']) }}
                                         data-delete-url={{ route('lm_comp_remove', ['id' => 'REPLACE_WITH_ID']) }}
                                         data-create-url="{{ route('lm_comp_create') }}"
                                         data-edit-url="{{ route('lm_comp_edit', ['id' => 'REPLACE_WITH_ID']) }}"
-                                        data-group-create-url="{{ route('lm_comp_create_group') }}"
+                                        data-group-create-url="{{ route('lm_group_create') }}"
                                     >
                                         <thead>
                                             <tr>
@@ -271,7 +272,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="new_group_name" class="form-label">Название группы</label>
-                        <input type="text" class="form-control" id="new_group_name" placeholder="Введите название новой группы">
+                        <input type="text" class="form-control" id="new_group_name" placeholder="Введите название новой группы" style="text-transform: uppercase;">
                     </div>
                 </div>
                 <div class="modal-footer">

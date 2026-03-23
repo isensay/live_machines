@@ -52,11 +52,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             // Ajax - маршруты
             Route::middleware('ajax')->group(function () {
-                Route::get('/data',          [TechController::class, 'data'])->name('data');                 // Получение списка технических характеристик
-                Route::get('/references',    [TechController::class, 'references'])->name('references');     // Получение справочников для формы создания/редактирования
-                Route::get('/create',        [TechController::class, 'edit'])->name('create');               // Создание технической характеристики (загрузка информации в окно)
-                Route::post('/create',       [TechController::class, 'create'])->name('create');             // Создание технической характеристики (сохранение)
-                Route::post('/create/group', [TechController::class, 'create_group'])->name('create_group'); // Создание группы
+                Route::get('/data',          [TechController::class, 'data'])->name('data');             // Получение списка технических характеристик
+                Route::get('/references',    [TechController::class, 'references'])->name('references'); // Получение справочников для формы создания/редактирования
+                Route::get('/create',        [TechController::class, 'edit'])->name('create');           // Создание технической характеристики (загрузка информации в окно)
+                Route::post('/create',       [TechController::class, 'create'])->name('create');         // Создание технической характеристики (сохранение)
 
                 // Маршруты с ID
                 Route::whereNumber('id')->group(function () {
@@ -76,11 +75,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             // Ajax - маршруты
             Route::middleware('ajax')->group(function () {
-                Route::get('/data',          [CompController::class, 'data'])->name('data');                 // Получение списка комплектаций
-                Route::get('/references',    [CompController::class, 'references'])->name('references');     // Получение справочников для формы создания/редактирования
-                Route::get('/create',        [CompController::class, 'edit'])->name('create');               // Создание комплектации (загрузка информации в окно)
-                Route::post('/create',       [CompController::class, 'create'])->name('create');             // Создание комплектации (сохранение)
-                Route::post('/create/group', [CompController::class, 'create_group'])->name('create_group'); // Создание комплектации
+                Route::get('/data',          [CompController::class, 'data'])->name('data');             // Получение списка комплектаций
+                Route::get('/references',    [CompController::class, 'references'])->name('references'); // Получение справочников для формы создания/редактирования
+                Route::get('/create',        [CompController::class, 'edit'])->name('create');           // Создание комплектации (загрузка информации в окно)
+                Route::post('/create',       [CompController::class, 'create'])->name('create');         // Создание комплектации (сохранение)
 
                 // Маршруты с ID
                 Route::whereNumber('id')->group(function () {
