@@ -52,8 +52,8 @@ class HomeController extends Controller
                 'memoryUsed'       => round($metrics['memory']['used_gb'], 0),
                 'redisTotal'       => round($metrics['redis']['total_gb'], 1),
                 'redisUsed'        => round($metrics['redis']['used_gb'], 1),
-                'mysqlTotal'       => round($metrics['mysql']['total_gb'], 1),
-                'mysqlUsed'        => round($metrics['mysql']['used_gb'], 1),
+                'mysqlTotal'       => round($metrics['mysql']['database_size_gb'], 1),
+                'mysqlUsed'        => round($metrics['mysql']['used_percentage'], 1),
                 //'sslExpiryDate'    => ($metrics['ssl_certificate']['expiry_date'] === null) ? 'дата не определена' : date('d.m.Y в H:i', strtotime($metrics['ssl_certificate']['expiry_date'])),
                 //'sslDaysRemaining' => $metrics['ssl_certificate']['days_remaining']
             ],
