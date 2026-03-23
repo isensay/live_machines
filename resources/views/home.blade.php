@@ -22,7 +22,7 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="knob-chart invisible" dir="ltr">
+                        <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['diskUsed'] }}%">
                             <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#f06b78"
                                 data-bgColor="#fbdee1" value="{{ $system['diskUsed'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
@@ -41,7 +41,7 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="knob-chart invisible" dir="ltr">
+                        <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['memoryUsed'] }}%">
                             <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#6c757d"
                                 data-bgColor="#ebeff2" value="{{ $system['memoryUsed'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
@@ -60,9 +60,9 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="knob-chart invisible" dir="ltr">
+                        <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['redisUsed'] }}%">
                             <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#f06b78"
-                                data-bgColor="#fbdee1" value="{{ $system['redisUsed'] }}""
+                                data-bgColor="#fbdee1" value="{{ $system['redisUsed'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
                                 data-thickness=".15"/>
                         </div>
@@ -79,7 +79,7 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="knob-chart invisible" dir="ltr">
+                        <div class="knob-chart invisible" dir="ltr" title="Использовано {{ $system['mysqlUsed'] }}%">
                             <input data-plugin="knob" data-width="70" data-height="70" data-fgColor="#6c757d"
                                 data-bgColor="#ebeff2" value="{{ $system['mysqlUsed'] }}"
                                 data-skin="tron" data-angleOffset="0" data-readOnly=true
@@ -97,6 +97,7 @@
     </div>
     <!-- end row -->
 
+    {{--
     <div class="row" style="display:none;">
 
         <div class="col-xl-4 col-lg-6">
@@ -235,6 +236,7 @@
 
     </div>
     <!-- end row -->
+    --}}
 
     <div class="row">
         <div class="col-xl-6">
@@ -355,6 +357,7 @@
     </div>
     <!-- end row -->
 
+    {{--
     <div style="display:none;" class="row">
         <div class="col-xl-8">
             <div class="card">
@@ -599,6 +602,7 @@
         </div> <!-- end col -->
     </div>
     <!-- end row -->
+    --}}
 
 @endsection
 
