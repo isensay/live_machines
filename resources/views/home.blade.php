@@ -17,6 +17,7 @@
         </div>
     </div>
 
+    <!-- Статистика системы -->
     <div class="row">
         <div class="col-xl-3 col-md-6">
             <div class="card">
@@ -95,7 +96,127 @@
         </div><!-- end col -->
 
     </div>
-    <!-- end row -->
+
+    <!-- Карта со странами производителей и список производителей -->
+    <div class="row">
+        <!-- Карта -->
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-widgets">
+                        {{--<a href="javascript:;" data-toggle="reload"><i class="mdi mdi-refresh"></i></a>--}}
+                        <a data-bs-toggle="collapse" href="#cardCollpase4" role="button" aria-expanded="false" aria-controls="cardCollpase4"><i class="mdi mdi-minus"></i></a>
+                        {{--<a href="javascript:;" data-toggle="remove"><i class="mdi mdi-close"></i></a>--}}
+                    </div>
+                    <h4 class="header-title mb-0">Страны производителей</h4>
+
+                    <div id="cardCollpase4" class="collapse pt-3 show">
+                        <div id="world-map-markers" style="height: 390px; overflow: hidden;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Производители -->
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-widgets">
+                        {{--<a href="javascript:;" data-toggle="reload"><i class="mdi mdi-refresh"></i></a>--}}
+                        <a data-bs-toggle="collapse" href="#cardCollpase5" role="button" aria-expanded="false" aria-controls="cardCollpase5"><i class="mdi mdi-minus"></i></a>
+                        {{--<a href="javascript:;" data-toggle="remove"><i class="mdi mdi-close"></i></a>--}}
+                    </div>
+                    <h4 class="header-title mb-0">Производители</h4>
+
+                    <style>
+
+                    </style>
+
+                    <div id="cardCollpase5" class="collapse pt-3 show">
+                        <div class="table-responsive" style="max-height: 390px; overflow-y: auto;">
+                            <table class="table table-hover table-centered mb-0">
+                                <thead class="sticky-top bg-body" style="z-index: 1;">
+                                    <tr>
+                                        <th>Наименование</th>
+                                        <th style="text-align: center;">Страна</th>
+                                        <th style="text-align: center;">Моделей</th>
+                                        <th style="text-align: center;">Файлов</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($manufs as $item)
+                                    <tr>
+                                        <td>{{ $item->name }}</td>
+                                        <td style="text-align: center;">{!! $item->country !!}</td>
+                                        <td style="text-align: center;">{{ $item->models }}</td>
+                                        <td style="text-align: center;">{{ $item->files }}</td>
+                                    </tr>
+                                     @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика по справочникам -->
+    <div class="row">
+        <div class="col-xl-2 col-md-6">
+            <div class="widget-simple text-center card">
+                <div class="card-body">
+                    <h3 class="text-warning mt-0"><span data-plugin="counterup">{{ $stat['file'] }}</span></h3>
+                    <p class="text-muted mb-0">Файлов КП</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-6">
+            <div class="widget-simple text-center card">
+                <div class="card-body">
+                    <h3 class="text-info mt-0"><span data-plugin="counterup">{{ $stat['group'] }}</span></h3>
+                    <p class="text-muted mb-0">Гпупп</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-6">
+            <div class="widget-simple text-center card">
+                <div class="card-body">
+                    <h3 class="text-success mt-0" style="color:#37cde6;"><span data-plugin="counterup">{{ $stat['tech'] }}</span></h3>
+                    <p class="text-muted mb-0">Тех. характеристик</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-6">
+            <div class="widget-simple text-center card">
+                <div class="card-body">
+                    <h3 class="text-primary mt-0"><span data-plugin="counterup">{{ $stat['comp'] }}</span></h3>
+                    <p class="text-muted mb-0">Комплектаций</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-6">
+            <div class="widget-simple text-center card">
+                <div class="card-body">
+                    <h3 class="text-pink mt-0"><span data-plugin="counterup">{{ $stat['model'] }}</span></h3>
+                    <p class="text-muted mb-0">Моделей</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-6">
+            <div class="widget-simple text-center card">
+                <div class="card-body">
+                    <h3 class="text-purple mt-0"><span data-plugin="counterup">{{ $stat['manuf'] }}</span></h3>
+                    <p class="text-muted mb-0">Производителей</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     {{--
     <div class="row" style="display:none;">
@@ -235,129 +356,7 @@
         </div> <!-- end col -->
 
     </div>
-    <!-- end row -->
-    --}}
 
-    <div class="row">
-        <div class="col-xl-6">
-            <div class="card">
-                <div class="card-body">
-                    <div class="card-widgets">
-                        {{--<a href="javascript:;" data-toggle="reload"><i class="mdi mdi-refresh"></i></a>--}}
-                        <a data-bs-toggle="collapse" href="#cardCollpase4" role="button" aria-expanded="false" aria-controls="cardCollpase4"><i class="mdi mdi-minus"></i></a>
-                        {{--<a href="javascript:;" data-toggle="remove"><i class="mdi mdi-close"></i></a>--}}
-                    </div>
-                    <h4 class="header-title mb-0">Страны производителей</h4>
-
-                    <div id="cardCollpase4" class="collapse pt-3 show">
-                        <div id="world-map-markers" style="height: 390px; overflow: hidden;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-6">
-            <div class="card">
-                <div class="card-body">
-                    <div class="card-widgets">
-                        {{--<a href="javascript:;" data-toggle="reload"><i class="mdi mdi-refresh"></i></a>--}}
-                        <a data-bs-toggle="collapse" href="#cardCollpase5" role="button" aria-expanded="false" aria-controls="cardCollpase5"><i class="mdi mdi-minus"></i></a>
-                        {{--<a href="javascript:;" data-toggle="remove"><i class="mdi mdi-close"></i></a>--}}
-                    </div>
-                    <h4 class="header-title mb-0">Производители</h4>
-
-                    <style>
-
-                    </style>
-
-                    <div id="cardCollpase5" class="collapse pt-3 show">
-                        <div class="table-responsive" style="max-height: 390px; overflow-y: auto;">
-                            <table class="table table-hover table-centered mb-0">
-                                <thead class="sticky-top bg-body" style="z-index: 1;">
-                                    <tr>
-                                        <th>Наименование</th>
-                                        <th style="text-align: center;">Страна</th>
-                                        <th style="text-align: center;">Моделей</th>
-                                        <th style="text-align: center;">Файлов</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($manufs as $item)
-                                    <tr>
-                                        <td>{{ $item->name }}</td>
-                                        <td style="text-align: center;">{!! $item->country !!}</td>
-                                        <td style="text-align: center;">{{ $item->models }}</td>
-                                        <td style="text-align: center;">{{ $item->files }}</td>
-                                    </tr>
-                                     @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- end row -->
-
-    <div class="row">
-        <div class="col-xl-2 col-md-6">
-            <div class="widget-simple text-center card">
-                <div class="card-body">
-                    <h3 class="text-warning mt-0"><span data-plugin="counterup">{{ $stat['file'] }}</span></h3>
-                    <p class="text-muted mb-0">Файлов КП</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-2 col-md-6">
-            <div class="widget-simple text-center card">
-                <div class="card-body">
-                    <h3 class="text-info mt-0"><span data-plugin="counterup">{{ $stat['group'] }}</span></h3>
-                    <p class="text-muted mb-0">Гпупп</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-2 col-md-6">
-            <div class="widget-simple text-center card">
-                <div class="card-body">
-                    <h3 class="text-success mt-0" style="color:#37cde6;"><span data-plugin="counterup">{{ $stat['tech'] }}</span></h3>
-                    <p class="text-muted mb-0">Тех. характеристик</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-2 col-md-6">
-            <div class="widget-simple text-center card">
-                <div class="card-body">
-                    <h3 class="text-primary mt-0"><span data-plugin="counterup">{{ $stat['comp'] }}</span></h3>
-                    <p class="text-muted mb-0">Комплектаций</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-2 col-md-6">
-            <div class="widget-simple text-center card">
-                <div class="card-body">
-                    <h3 class="text-pink mt-0"><span data-plugin="counterup">{{ $stat['model'] }}</span></h3>
-                    <p class="text-muted mb-0">Моделей</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-2 col-md-6">
-            <div class="widget-simple text-center card">
-                <div class="card-body">
-                    <h3 class="text-purple mt-0"><span data-plugin="counterup">{{ $stat['manuf'] }}</span></h3>
-                    <p class="text-muted mb-0">Производителей</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- end row -->
-
-    {{--
     <div style="display:none;" class="row">
         <div class="col-xl-8">
             <div class="card">
@@ -601,7 +600,6 @@
             </div> <!-- end card-box -->
         </div> <!-- end col -->
     </div>
-    <!-- end row -->
     --}}
 
 @endsection
