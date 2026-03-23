@@ -89,8 +89,11 @@ class HealthCheckService
             if (!$this->isRedisAvailable()) {
                 return [
                     'total_gb' => 0,
+                    'total_mb' => 0,
                     'used_gb' => 0,
+                    'used_mb' => 0,
                     'free_gb' => 0,
+                    'free_mb' => 0,
                     'used_percentage' => 0,
                     'free_percentage' => 0,
                     'status' => 'error',
@@ -110,11 +113,19 @@ class HealthCheckService
                 $usedPercentage = round(($usedMemory / $maxMemory) * 100, 2);
                 $freePercentage = round(100 - $usedPercentage, 2);
                 $totalGb = round($maxMemory / (1024 * 1024 * 1024), 2);
+                $totalMb = round($maxMemory / (1024 * 1024), 2);
+                $usedGb = round($usedMemory / (1024 * 1024 * 1024), 2);
+                $usedMb = round($usedMemory / (1024 * 1024), 2);
+                $freeGb = round(($maxMemory - $usedMemory) / (1024 * 1024 * 1024), 2);
+                $freeMb = round(($maxMemory - $usedMemory) / (1024 * 1024), 2);
                 
                 return [
                     'total_gb' => $totalGb,
-                    'used_gb' => round($usedMemory / (1024 * 1024 * 1024), 2),
-                    'free_gb' => round(($maxMemory - $usedMemory) / (1024 * 1024 * 1024), 2),
+                    'total_mb' => $totalMb,
+                    'used_gb' => $usedGb,
+                    'used_mb' => $usedMb,
+                    'free_gb' => $freeGb,
+                    'free_mb' => $freeMb,
                     'used_percentage' => $usedPercentage,
                     'free_percentage' => $freePercentage,
                     'status' => $this->getRedisStatus($usedPercentage),
@@ -127,11 +138,19 @@ class HealthCheckService
             $usedPercentage = round(($usedMemory / $maxMemory) * 100, 2);
             $freePercentage = round(100 - $usedPercentage, 2);
             $totalGb = round($maxMemory / (1024 * 1024 * 1024), 2);
+            $totalMb = round($maxMemory / (1024 * 1024), 2);
+            $usedGb = round($usedMemory / (1024 * 1024 * 1024), 2);
+            $usedMb = round($usedMemory / (1024 * 1024), 2);
+            $freeGb = round(($maxMemory - $usedMemory) / (1024 * 1024 * 1024), 2);
+            $freeMb = round(($maxMemory - $usedMemory) / (1024 * 1024), 2);
             
             return [
                 'total_gb' => $totalGb,
-                'used_gb' => round($usedMemory / (1024 * 1024 * 1024), 2),
-                'free_gb' => round(($maxMemory - $usedMemory) / (1024 * 1024 * 1024), 2),
+                'total_mb' => $totalMb,
+                'used_gb' => $usedGb,
+                'used_mb' => $usedMb,
+                'free_gb' => $freeGb,
+                'free_mb' => $freeMb,
                 'used_percentage' => $usedPercentage,
                 'free_percentage' => $freePercentage,
                 'status' => $this->getRedisStatus($usedPercentage),
@@ -144,8 +163,11 @@ class HealthCheckService
             Log::error('Failed to get Redis metrics: ' . $e->getMessage());
             return [
                 'total_gb' => 0,
+                'total_mb' => 0,
                 'used_gb' => 0,
+                'used_mb' => 0,
                 'free_gb' => 0,
+                'free_mb' => 0,
                 'used_percentage' => 0,
                 'free_percentage' => 0,
                 'status' => 'error',
@@ -164,212 +186,194 @@ class HealthCheckService
             // Проверяем подключение к MySQL
             DB::connection()->getPdo();
             
-            // Получаем информацию о MySQL
-            $mysqlInfo = $this->getMysqlInfo();
+            // Получаем размер всех баз данных
+            $totalSize = $this->getTotalDatabasesSize();
             
-            // Получаем размер базы данных
-            $databaseSize = $this->getDatabaseSize();
+            // Получаем размер базы данных livemachines
+            $livemachinesSize = $this->getDatabaseSize('livemachines');
             
-            // Получаем лимиты MySQL
-            $limits = $this->getMysqlLimits();
-            
-            // Получаем статистику подключений
-            $connections = $this->getMysqlConnections();
-            
-            // Получаем статус запросов
-            $queries = $this->getMysqlQueries();
-            
-            // Рассчитываем проценты использования
-            $maxConnections = $limits['max_connections'] ?? 100;
-            $currentConnections = $connections['current'] ?? 0;
-            $connectionPercentage = $maxConnections > 0 ? round(($currentConnections / $maxConnections) * 100, 2) : 0;
-            
-            // Размер базы данных в ГБ
-            $totalGb = round($databaseSize / (1024 * 1024 * 1024), 2);
-            $usedGb = $totalGb;
-            $freeGb = 0; // MySQL не имеет встроенного лимита, используем диск
-            
-            // Получаем свободное место на диске MySQL
+            // Получаем информацию о диске, где хранятся базы данных MySQL
             $diskMetrics = $this->getMysqlDiskMetrics();
             
+            // Общий размер в ГБ и МБ
+            $totalSizeGb = round($totalSize / (1024 * 1024 * 1024), 2);
+            $totalSizeMb = round($totalSize / (1024 * 1024), 2);
+            
+            // Размер livemachines в ГБ и МБ
+            $livemachinesSizeGb = round($livemachinesSize / (1024 * 1024 * 1024), 2);
+            $livemachinesSizeMb = round($livemachinesSize / (1024 * 1024), 2);
+            
             return [
-                // Основная информация
-                'version' => $mysqlInfo['version'] ?? 'Unknown',
-                'server' => $mysqlInfo['server'] ?? 'Unknown',
-                'host' => config('database.connections.mysql.host', 'localhost'),
-                'database' => config('database.connections.mysql.database', 'Unknown'),
-                
-                // Размер базы данных
-                'total_gb' => $totalGb,
-                'used_gb' => $usedGb,
-                'free_gb' => $diskMetrics['free_gb'],
-                'database_size_gb' => $totalGb,
-                'database_size_mb' => round($databaseSize / (1024 * 1024), 2),
-                
-                // Проценты использования
-                'used_percentage' => $diskMetrics['used_percentage'],
-                'free_percentage' => $diskMetrics['free_percentage'],
-                
-                // Подключения
-                'connections' => [
-                    'current' => $currentConnections,
-                    'max' => $maxConnections,
-                    'percentage' => $connectionPercentage,
-                    'threads_connected' => $connections['threads_connected'] ?? 0,
-                    'threads_running' => $connections['threads_running'] ?? 0,
+                // Размер основной БД + БД livemachines
+                'total_databases' => [
+                    'size_gb' => $totalSizeGb,
+                    'size_mb' => $totalSizeMb,
+                    'size_bytes' => $totalSize,
                 ],
-                
-                // Статистика запросов
-                'queries' => [
-                    'total' => $queries['total'] ?? 0,
-                    'per_second' => $queries['per_second'] ?? 0,
-                    'slow_queries' => $queries['slow_queries'] ?? 0,
+                'livemachines_database' => [
+                    'size_gb' => $livemachinesSizeGb,
+                    'size_mb' => $livemachinesSizeMb,
+                    'size_bytes' => $livemachinesSize,
                 ],
-                
-                // Лимиты
-                'limits' => $limits,
-                
-                // Диск MySQL
-                'disk' => $diskMetrics,
-                
-                // Статус
-                'status' => $this->getMysqlStatus($diskMetrics['used_percentage'], $connectionPercentage),
-                'message' => $this->getMysqlMessage($diskMetrics['used_percentage'], $connectionPercentage),
+                // Процент использования диска MySQL
+                'disk_usage' => [
+                    'used_percentage' => $diskMetrics['used_percentage'],
+                    'free_percentage' => $diskMetrics['free_percentage'],
+                    'total_gb' => $diskMetrics['total_gb'],
+                    'used_gb' => $diskMetrics['used_gb'],
+                    'free_gb' => $diskMetrics['free_gb'],
+                ],
+                'status' => $this->getMysqlStatus($diskMetrics['used_percentage']),
+                'message' => $this->getMysqlMessage($diskMetrics['used_percentage']),
                 'available' => true,
-                
             ];
             
         } catch (\Exception $e) {
             Log::error('Failed to get MySQL metrics: ' . $e->getMessage());
             return [
-                'total_gb' => 0,
-                'used_gb' => 0,
-                'free_gb' => 0,
-                'used_percentage' => 0,
-                'free_percentage' => 0,
+                'total_databases' => [
+                    'size_gb' => 0,
+                    'size_mb' => 0,
+                    'size_bytes' => 0,
+                ],
+                'livemachines_database' => [
+                    'size_gb' => 0,
+                    'size_mb' => 0,
+                    'size_bytes' => 0,
+                ],
+                'disk_usage' => [
+                    'used_percentage' => 0,
+                    'free_percentage' => 0,
+                    'total_gb' => 0,
+                    'used_gb' => 0,
+                    'free_gb' => 0,
+                ],
                 'status' => 'error',
                 'message' => 'Ошибка подключения к MySQL: ' . $e->getMessage(),
                 'available' => false,
-                'version' => 'Unknown',
             ];
         }
     }
 
     /**
-     * Получить информацию о MySQL
+     * Метрики SSL сертификата
      */
-    private function getMysqlInfo(): array
+    public function getSslMetrics(?string $hostname = null, ?int $port = 443): array
     {
+        $hostname = $hostname ?? request()->getHost();
+        
         try {
-            $version = DB::selectOne('SELECT VERSION() as version');
-            $server = DB::selectOne('SELECT @@hostname as hostname, @@port as port');
+            $certificate = $this->getCertificate($hostname, $port);
+            
+            if (!$certificate) {
+                return [
+                    'valid' => false,
+                    'expiry_date' => null,
+                    'days_remaining' => 0,
+                    'percentage_remaining' => 0,
+                    'status' => 'error',
+                    'message' => 'Не удалось получить сертификат для ' . $hostname,
+                    'hostname' => $hostname,
+                ];
+            }
+            
+            $parsed = openssl_x509_parse($certificate);
+            
+            if (!$parsed || !isset($parsed['validFrom_time_t'], $parsed['validTo_time_t'])) {
+                return [
+                    'valid' => false,
+                    'expiry_date' => null,
+                    'days_remaining' => 0,
+                    'percentage_remaining' => 0,
+                    'status' => 'error',
+                    'message' => 'Не удалось распарсить сертификат',
+                    'hostname' => $hostname,
+                ];
+            }
+            
+            $validFrom = $parsed['validFrom_time_t'];
+            $validTo = $parsed['validTo_time_t'];
+            $now = time();
+            
+            $isValid = ($now >= $validFrom && $now <= $validTo);
+            $daysRemaining = floor(($validTo - $now) / (60 * 60 * 24));
+            $daysTotal = floor(($validTo - $validFrom) / (60 * 60 * 24));
+            
+            $percentageRemaining = 0;
+            if ($daysTotal > 0 && $now >= $validFrom) {
+                $percentageRemaining = round(($daysRemaining / $daysTotal) * 100, 2);
+            } elseif ($now < $validFrom) {
+                $percentageRemaining = 100;
+            }
+            
+            $expiryDate = date('Y-m-d H:i:s', $validTo);
             
             return [
-                'version' => $version->version ?? 'Unknown',
-                'server' => ($server->hostname ?? 'localhost') . ':' . ($server->port ?? '3306'),
+                'valid' => $isValid,
+                'hostname' => $hostname,
+                'issued_to' => $parsed['subject']['CN'] ?? 'Unknown',
+                'issued_by' => $parsed['issuer']['CN'] ?? 'Unknown',
+                'valid_from' => date('Y-m-d H:i:s', $validFrom),
+                'expiry_date' => $expiryDate,
+                'days_remaining' => $daysRemaining,
+                'percentage_remaining' => $percentageRemaining,
+                'status' => $this->getSslStatus($daysRemaining, $percentageRemaining),
+                'message' => $this->getSslMessage($daysRemaining, $isValid),
             ];
+            
         } catch (\Exception $e) {
-            return ['version' => 'Unknown', 'server' => 'Unknown'];
+            Log::error('Failed to get SSL certificate: ' . $e->getMessage());
+            return [
+                'valid' => false,
+                'expiry_date' => null,
+                'days_remaining' => 0,
+                'percentage_remaining' => 0,
+                'status' => 'error',
+                'message' => 'Ошибка получения сертификата: ' . $e->getMessage(),
+                'hostname' => $hostname,
+            ];
         }
     }
 
     /**
-     * Получить размер базы данных
+     * Получить общий размер всех баз данных
      */
-    private function getDatabaseSize(): float
+    private function getTotalDatabasesSize(): float
     {
         try {
-            $database = config('database.connections.mysql.database');
-            
             $result = DB::selectOne("
                 SELECT 
                     ROUND(SUM(data_length + index_length), 2) as size
                 FROM information_schema.tables 
-                WHERE table_schema = ?
-            ", [$database]);
+                WHERE table_schema NOT IN ('information_schema', 'performance_schema', 'mysql', 'sys')
+            ");
             
             return $result->size ?? 0;
             
         } catch (\Exception $e) {
-            Log::error('Failed to get database size: ' . $e->getMessage());
+            Log::error('Failed to get total databases size: ' . $e->getMessage());
             return 0;
         }
     }
 
     /**
-     * Получить лимиты MySQL
+     * Получить размер конкретной базы данных
      */
-    private function getMysqlLimits(): array
+    private function getDatabaseSize(string $databaseName): float
     {
         try {
-            $maxConnections = DB::selectOne("SHOW VARIABLES LIKE 'max_connections'");
-            $maxAllowedPacket = DB::selectOne("SHOW VARIABLES LIKE 'max_allowed_packet'");
-            $waitTimeout = DB::selectOne("SHOW VARIABLES LIKE 'wait_timeout'");
-            $innodbBufferPool = DB::selectOne("SHOW VARIABLES LIKE 'innodb_buffer_pool_size'");
+            $result = DB::selectOne("
+                SELECT 
+                    ROUND(SUM(data_length + index_length), 2) as size
+                FROM information_schema.tables 
+                WHERE table_schema = ?
+            ", [$databaseName]);
             
-            return [
-                'max_connections' => (int)($maxConnections->Value ?? 100),
-                'max_allowed_packet_mb' => round(($maxAllowedPacket->Value ?? 0) / (1024 * 1024), 2),
-                'wait_timeout_seconds' => (int)($waitTimeout->Value ?? 28800),
-                'innodb_buffer_pool_mb' => round(($innodbBufferPool->Value ?? 0) / (1024 * 1024), 2),
-            ];
+            return $result->size ?? 0;
+            
         } catch (\Exception $e) {
-            return [
-                'max_connections' => 100,
-                'max_allowed_packet_mb' => 0,
-                'wait_timeout_seconds' => 0,
-                'innodb_buffer_pool_mb' => 0,
-            ];
-        }
-    }
-
-    /**
-     * Получить статистику подключений MySQL
-     */
-    private function getMysqlConnections(): array
-    {
-        try {
-            $threads = DB::selectOne("SHOW STATUS LIKE 'Threads_connected'");
-            $running = DB::selectOne("SHOW STATUS LIKE 'Threads_running'");
-            $maxUsed = DB::selectOne("SHOW STATUS LIKE 'Max_used_connections'");
-            
-            $current = $threads->Value ?? 0;
-            $runningCount = $running->Value ?? 0;
-            $maxUsedConnections = $maxUsed->Value ?? 0;
-            
-            return [
-                'current' => (int)$current,
-                'threads_connected' => (int)$current,
-                'threads_running' => (int)$runningCount,
-                'max_used' => (int)$maxUsedConnections,
-            ];
-        } catch (\Exception $e) {
-            return ['current' => 0, 'threads_connected' => 0, 'threads_running' => 0];
-        }
-    }
-
-    /**
-     * Получить статистику запросов MySQL
-     */
-    private function getMysqlQueries(): array
-    {
-        try {
-            $questions = DB::selectOne("SHOW STATUS LIKE 'Questions'");
-            $uptime = DB::selectOne("SHOW STATUS LIKE 'Uptime'");
-            $slowQueries = DB::selectOne("SHOW STATUS LIKE 'Slow_queries'");
-            
-            $totalQueries = $questions->Value ?? 0;
-            $uptimeSeconds = $uptime->Value ?? 1;
-            $slowQueriesCount = $slowQueries->Value ?? 0;
-            
-            return [
-                'total' => (int)$totalQueries,
-                'per_second' => round($totalQueries / $uptimeSeconds, 2),
-                'slow_queries' => (int)$slowQueriesCount,
-                'slow_queries_percentage' => $totalQueries > 0 ? round(($slowQueriesCount / $totalQueries) * 100, 4) : 0,
-            ];
-        } catch (\Exception $e) {
-            return ['total' => 0, 'per_second' => 0, 'slow_queries' => 0];
+            Log::error("Failed to get database size for {$databaseName}: " . $e->getMessage());
+            return 0;
         }
     }
 
@@ -379,9 +383,11 @@ class HealthCheckService
     private function getMysqlDiskMetrics(): array
     {
         try {
+            // Получаем путь к директории данных MySQL
             $dataDir = DB::selectOne('SHOW VARIABLES LIKE "datadir"');
             $dataDirPath = $dataDir->Value ?? '/var/lib/mysql/';
             
+            // Определяем корневой диск/раздел
             if (PHP_OS_FAMILY === 'Windows') {
                 $rootPath = substr($dataDirPath, 0, 2) . '\\';
             } else {
@@ -536,86 +542,6 @@ class HealthCheckService
     }
 
     /**
-     * Метрики SSL сертификата
-     */
-    public function getSslMetrics(?string $hostname = null, ?int $port = 443): array
-    {
-        $hostname = $hostname ?? request()->getHost();
-        
-        try {
-            $certificate = $this->getCertificate($hostname, $port);
-            
-            if (!$certificate) {
-                return [
-                    'valid' => false,
-                    'expiry_date' => null,
-                    'days_remaining' => 0,
-                    'percentage_remaining' => 0,
-                    'status' => 'error',
-                    'message' => 'Не удалось получить сертификат для ' . $hostname,
-                    'hostname' => $hostname,
-                ];
-            }
-            
-            $parsed = openssl_x509_parse($certificate);
-            
-            if (!$parsed || !isset($parsed['validFrom_time_t'], $parsed['validTo_time_t'])) {
-                return [
-                    'valid' => false,
-                    'expiry_date' => null,
-                    'days_remaining' => 0,
-                    'percentage_remaining' => 0,
-                    'status' => 'error',
-                    'message' => 'Не удалось распарсить сертификат',
-                    'hostname' => $hostname,
-                ];
-            }
-            
-            $validFrom = $parsed['validFrom_time_t'];
-            $validTo = $parsed['validTo_time_t'];
-            $now = time();
-            
-            $isValid = ($now >= $validFrom && $now <= $validTo);
-            $daysRemaining = floor(($validTo - $now) / (60 * 60 * 24));
-            $daysTotal = floor(($validTo - $validFrom) / (60 * 60 * 24));
-            
-            $percentageRemaining = 0;
-            if ($daysTotal > 0 && $now >= $validFrom) {
-                $percentageRemaining = round(($daysRemaining / $daysTotal) * 100, 2);
-            } elseif ($now < $validFrom) {
-                $percentageRemaining = 100;
-            }
-            
-            $expiryDate = date('Y-m-d H:i:s', $validTo);
-            
-            return [
-                'valid' => $isValid,
-                'hostname' => $hostname,
-                'issued_to' => $parsed['subject']['CN'] ?? 'Unknown',
-                'issued_by' => $parsed['issuer']['CN'] ?? 'Unknown',
-                'valid_from' => date('Y-m-d H:i:s', $validFrom),
-                'expiry_date' => $expiryDate,
-                'days_remaining' => $daysRemaining,
-                'percentage_remaining' => $percentageRemaining,
-                'status' => $this->getSslStatus($daysRemaining, $percentageRemaining),
-                'message' => $this->getSslMessage($daysRemaining, $isValid),
-            ];
-            
-        } catch (\Exception $e) {
-            Log::error('Failed to get SSL certificate: ' . $e->getMessage());
-            return [
-                'valid' => false,
-                'expiry_date' => null,
-                'days_remaining' => 0,
-                'percentage_remaining' => 0,
-                'status' => 'error',
-                'message' => 'Ошибка получения сертификата: ' . $e->getMessage(),
-                'hostname' => $hostname,
-            ];
-        }
-    }
-
-    /**
      * Получить сертификат для хоста
      */
     private function getCertificate(string $hostname, int $port)
@@ -706,21 +632,20 @@ class HealthCheckService
         return 'Памяти Redis достаточно';
     }
     
-    private function getMysqlStatus(float $diskPercentage, float $connectionPercentage): string
+    private function getMysqlStatus(float $usedPercentage): string
     {
-        if ($diskPercentage >= 95) return 'critical';
-        if ($diskPercentage >= 85) return 'warning';
-        if ($diskPercentage >= 75 || $connectionPercentage >= 85) return 'attention';
+        if ($usedPercentage >= 95) return 'critical';
+        if ($usedPercentage >= 85) return 'warning';
+        if ($usedPercentage >= 75) return 'attention';
         return 'ok';
     }
     
-    private function getMysqlMessage(float $diskPercentage, float $connectionPercentage): string
+    private function getMysqlMessage(float $usedPercentage): string
     {
-        if ($diskPercentage >= 95) return 'КРИТИЧЕСКИ! Место на диске MySQL заканчивается!';
-        if ($diskPercentage >= 85) return 'Мало места на диске MySQL, требуется освобождение';
-        if ($diskPercentage >= 75) return 'Места на диске MySQL мало, рекомендуется увеличить';
-        if ($connectionPercentage >= 85) return 'Много активных подключений к MySQL';
-        return 'MySQL работает нормально';
+        if ($usedPercentage >= 95) return 'КРИТИЧЕСКИ! Место на диске MySQL заканчивается!';
+        if ($usedPercentage >= 85) return 'Мало места на диске MySQL, требуется освобождение';
+        if ($usedPercentage >= 75) return 'Места на диске MySQL мало, рекомендуется увеличить';
+        return 'Достаточно места на диске MySQL';
     }
     
     private function getSslStatus(int $daysRemaining, float $percentageRemaining): string

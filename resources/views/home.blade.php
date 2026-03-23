@@ -67,7 +67,7 @@
                                 data-thickness=".15"/>
                         </div>
                         <div class="text-end">
-                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['redisTotal'] }}</span> Гб </h3>
+                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['redisTotal'] }}</span> Мб </h3>
                             <p class="text-muted mb-0">База данных Redis</p>
                         </div>
                     </div>
@@ -86,8 +86,8 @@
                                 data-thickness=".15"/>
                         </div>
                         <div class="text-end">
-                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['mysqlTotal'] }}</span> Гб </h3>
-                            <p class="text-muted mb-0">База данных MySQL</p>
+                            <h3 class="mb-1 mt-0"> <span data-plugin="counterup">{{ $system['mysqlTotal'] }}</span> Мб </h3>
+                            <p class="text-muted mb-0">Базы данных MySQL</p>
                         </div>
                     </div>
                 </div>

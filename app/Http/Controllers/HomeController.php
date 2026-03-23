@@ -38,7 +38,7 @@ class HomeController extends Controller
 
         $manufs = $this->manufModel->get_list();
 
-        dump($metrics);
+        //dump($metrics);
 
         //$currentLocale = app()->getLocale();
         //dump($currentLocale);
@@ -50,10 +50,10 @@ class HomeController extends Controller
                 'diskUsed'         => round($metrics['disk']['used_percentage'], 0),
                 'memoryTotal'      => round($metrics['memory']['total_gb'], 0),
                 'memoryUsed'       => round($metrics['memory']['used_percentage'], 0),
-                'redisTotal'       => round($metrics['redis']['total_gb'], 1),
+                'redisTotal'       => round($metrics['redis']['total_mb'], 1),
                 'redisUsed'        => round($metrics['redis']['used_percentage'], 1),
-                'mysqlTotal'       => round($metrics['mysql']['disk']['total_gb'], 1),
-                'mysqlUsed'        => round($metrics['mysql']['disk']['used_percentage'], 1),
+                'mysqlTotal'       => round($metrics['mysql']['total_databases']['size_mb'], 1),
+                'mysqlUsed'        => round(($metrics['mysql']['total_databases']['size_gb'] / $metrics['mysql']['disk_usage']['total_gb']) * 100, 1),
                 //'sslExpiryDate'    => ($metrics['ssl_certificate']['expiry_date'] === null) ? 'дата не определена' : date('d.m.Y в H:i', strtotime($metrics['ssl_certificate']['expiry_date'])),
                 //'sslDaysRemaining' => $metrics['ssl_certificate']['days_remaining']
             ],
