@@ -45,14 +45,6 @@
 
                     <div class="collapse" id="sidebarMultilevel_lm">
                         <ul class="nav-second-level">
-                            {{--
-                            <li>
-                                <a href="#">Единицы измерения</a>
-                            </li>
-                            <li>
-                                <a href="#">Значения</a>
-                            </li>
-                            --}}
                             <li>
                                 <a href="{{ route('lm_tech_index') }}">Тех. характеристики</a>
                             </li>
@@ -60,7 +52,13 @@
                                 <a href="{{ route('lm_comp_index') }}">Комплектации</a>
                             </li>
                             <li>
-                                <a href="{{ route('lm_group_index') }}">Группы параметров</a>
+                                <a href="{{ route('lm_group_index') }}">Группы</a>
+                            </li>
+                            <li>
+                                <a style="color:gray;" href="#">Единицы измерения</a>
+                            </li>
+                            <li>
+                                <a style="color:gray;" href="#">Значения</a>
                             </li>
                             <li>
                                 <a href="{{ route('lm_model_index') }}">Модели</a>

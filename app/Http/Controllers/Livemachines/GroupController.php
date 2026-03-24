@@ -69,7 +69,7 @@ class GroupController extends Controller {
     }
 
     /**
-     * Создание записи
+     * Создание записи (сохранение)
      */
     public function create(Request $request) {
         // Искусственная задержка (для режима разработки)
@@ -121,7 +121,7 @@ class GroupController extends Controller {
     }
 
     /**
-     * Получение данных для редактирования
+     * Получение данных для редактирования (загрузка информации в окно)
      */
     public function edit(Request $request, int $id) {
         // Искусственная задержка (для режима разработки)
@@ -170,7 +170,7 @@ class GroupController extends Controller {
     }
 
     /**
-     * Сохранение изменений имеющейся записи
+     * Сохранение изменений имеющейся записи (сохранение)
      */
     public function update(Request $request, $id) {
         // Искусственная задержка (для режима разработки)
@@ -207,7 +207,7 @@ class GroupController extends Controller {
     }
 
     /**
-     * Удаление группы
+     * Удаление записи
      */
     public function remove(int $id) {
         // Искусственная задержка (для режима разработки)

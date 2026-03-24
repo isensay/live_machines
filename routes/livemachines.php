@@ -22,27 +22,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/manuf',       [SpravController::class,   'manuf_list'])->name('manuf_list');
     });
 
-    //  Группы параметров
-    Route::prefix('livemachines/sprav')->name('lm_group_')->group(function () {
-        Route::prefix('group')->group(function () {
-            // Основная страница
-            Route::get('/', [GroupController::class, 'index'])->name('index');
-
-            // Ajax - маршруты
-            Route::middleware('ajax')->group(function () {
-                Route::get('/data',    [GroupController::class, 'data'])->name('data');     // Получение списка групп
-                Route::post('/create', [GroupController::class, 'create'])->name('create'); // Создание груааы (сохранение)
-
-                // Маршруты с ID
-                Route::whereNumber('id')->group(function () {
-                    Route::get('/edit/{id}',    [GroupController::class, 'edit'])->name('edit');     // Редактирование груааы (загрузка информации в окно)
-                    Route::post('/update/{id}', [GroupController::class, 'update'])->name('update'); // Редактирование груааы (сохранение)
-                    Route::delete('/{id}',      [GroupController::class, 'remove'])->name('remove'); // Удаление груааы
-                });
-            });
-        });
-    });
-
     // Технические характеристики
     Route::prefix('livemachines/sprav')->name('lm_tech_')->group(function () {
         Route::prefix('tech')->group(function () {
@@ -84,6 +63,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/edit/{id}',     [CompController::class, 'edit'])->name('edit');      // Редактирование (загрузка информации в окно)
                     Route::post('/update/{id}',  [CompController::class, 'update'])->name('update');  // Редактирование (сохранение)
                     Route::delete('/{id}',       [CompController::class, 'remove'])->name('remove');  // Удаление комплектации
+                });
+            });
+        });
+    });
+
+    // Группы
+    Route::prefix('livemachines/sprav')->name('lm_group_')->group(function () {
+        Route::prefix('group')->group(function () {
+            // Основная страница
+            Route::get('/', [GroupController::class, 'index'])->name('index');
+
+            // Ajax - маршруты
+            Route::middleware('ajax')->group(function () {
+                Route::get('/data',    [GroupController::class, 'data'])->name('data');     // Получение списка
+                Route::post('/create', [GroupController::class, 'create'])->name('create'); // Создание записи (сохранение)
+
+                // Маршруты с ID
+                Route::whereNumber('id')->group(function () {
+                    Route::get('/edit/{id}',    [GroupController::class, 'edit'])->name('edit');     // Получение данных для редактирования (загрузка информации в окно)
+                    Route::post('/update/{id}', [GroupController::class, 'update'])->name('update'); // Сохранение изменений имеющейся записи (сохранение)
+                    Route::delete('/{id}',      [GroupController::class, 'remove'])->name('remove'); // Удаление записи
                 });
             });
         });
