@@ -2,6 +2,9 @@
 
 /**
  * Контроллер для управления справочником групп
+ * Группы имеют следующие типы:
+ * 1 - Технические характеристики
+ * 2 - Комплектации
  */
 
 namespace App\Http\Controllers\Livemachines;
@@ -14,17 +17,19 @@ use App\Models\Livemachines\GroupModel;
 
 
 class GroupController extends Controller {
-    private $techParam = null;
     private $dbConnection;
     private $groupModel;
 
+    /**
+     * Подключение к БД и инициализация моделей
+     */
     public function __construct() {
         $this->dbConnection = DB::connection('livemachines');
         $this->groupModel = new GroupModel([], $this->dbConnection);
     }
 
     /**
-     * Список стран (основная страница)
+     * Основная страница
      */
     public function index() {
         return view('livemachines/group', [
@@ -33,7 +38,7 @@ class GroupController extends Controller {
     }
 
     /**
-     * Получение списка стран
+     * Получение списка
      */
     public function data(Request $request) {
         // Искусственная задержка (для режима разработки)
@@ -64,40 +69,7 @@ class GroupController extends Controller {
     }
 
     /**
-     * Валидация и подготовка входных данных
-     */
-    private function validate_and_prepare($request, $groupId = null) {
-        if ($groupId == 'new') {
-            $groupId = 0;
-        } elseif (is_numeric($groupId) && (int)$groupId > 0) {
-            $groupId = (int)$groupId;
-        } else {
-            return 'Неверный идентификатор параметра';
-        }
-
-        // Очищаем от пробелов входные данные
-        $request->merge([
-            'name' => trim($request->name ?? '')
-        ]);
-
-        // Валидация
-        $request->validate([
-            'type_id' => 'integer|in:1,2',
-            'name'    => 'required|string|max:255',
-        ]);
-
-        // Тип
-        $typeId = (int)$request->type_id ?? 0;
-
-        // Наименование
-        $groupName = $request->name ?? '';
-        $groupName = preg_replace('/\s+/', ' ', $groupName);
-
-        return ['typeId' => $typeId, 'name' => $groupName];
-    }
-
-    /**
-     * Создание новой записи
+     * Создание записи
      */
     public function create(Request $request) {
         // Искусственная задержка (для режима разработки)
@@ -109,8 +81,8 @@ class GroupController extends Controller {
         $validAndPrepareData = $this->validate_and_prepare($request, 'new');
 
         if (is_array($validAndPrepareData)) {
-            $typeId    = $validAndPrepareData['typeId'];
-            $groupName = $validAndPrepareData['name'];
+            $typeId = $validAndPrepareData['typeId'];
+            $name   = $validAndPrepareData['name'];
         } else {
             return response()->json([
                 'success' => false,
@@ -119,9 +91,9 @@ class GroupController extends Controller {
         }
 
         // Проверяем есть ли уже такая запись
-        $groupId = $this->groupModel->get_id_from_name($typeId, $groupName);
+        $id = $this->groupModel->get_id_from_name($typeId, $name);
 
-        if (is_numeric($groupId)) {
+        if (is_numeric($id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка: запись уже существует'
@@ -129,29 +101,29 @@ class GroupController extends Controller {
         }
 
         // Создаем группу
-        $groupId = $this->groupModel->get_id_from_name($typeId, $groupName, true);
+        $id = $this->groupModel->get_id_from_name($typeId, $name, true);
 
-        if (is_numeric($groupId)) {
+        if (is_numeric($id)) {
             return response()->json([
                 'success' => true,
                 'message' => '',
                 'group' => [
-                    'id'   => $groupId,
-                    'name' => mb_strtoupper($groupName)
+                    'id'   => $id,
+                    'name' => mb_strtoupper($name)
                 ]
             ]);
         } else {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка: '.$groupId
+                'message' => 'Ошибка: '.$id
             ]);
         }
     }
 
     /**
-     * Получить данные для редактирования
+     * Получение данных для редактирования
      */
-    public function edit(Request $request, int $groupId) {
+    public function edit(Request $request, int $id) {
         // Искусственная задержка (для режима разработки)
         if (config('app.debug')) {
             usleep(500000);
@@ -163,7 +135,7 @@ class GroupController extends Controller {
         Log::debug('type_id: '.$typeId);
 
         // Проверяем, это создание нового параметра?
-        $isNew = $request->get('new') === 'true' || $groupId === null;
+        $isNew = $request->get('new') === 'true' || $id === null;
 
         if ($isNew) {
             return response()->json([
@@ -179,9 +151,9 @@ class GroupController extends Controller {
         $request->validate(['id' => 'integer']);
 
         // Получаем информацию
-        $group = $this->groupModel->get_info_from_id($groupId);
+        $info = $this->groupModel->get_info_from_id($id);
 
-        if (!$group) {
+        if (!$info) {
             return response()->json([
                 'success' => false,
                 'message' => 'Параметр не найден'
@@ -191,8 +163,8 @@ class GroupController extends Controller {
         return response()->json([
             'success' => true,
             'data' => [
-                'id'   => $group->id,
-                'name' => $group->name,
+                'id'   => $info->id,
+                'name' => $info->name,
             ]
         ]);
     }
@@ -200,17 +172,17 @@ class GroupController extends Controller {
     /**
      * Сохранение изменений имеющейся записи
      */
-    public function update(Request $request, $groupId) {
+    public function update(Request $request, $id) {
         // Искусственная задержка (для режима разработки)
         if (config('app.debug')) {
             usleep(500000);
         }
 
         // Валидируем и подготавливаем входные данные
-        $validAndPrepareData = $this->validate_and_prepare($request, $groupId);
+        $validAndPrepareData = $this->validate_and_prepare($request, $id);
 
         if (is_array($validAndPrepareData)) {
-            $groupName = $validAndPrepareData['name'];
+            $name = $validAndPrepareData['name'];
         } else {
             return response()->json([
                 'success' => false,
@@ -219,7 +191,7 @@ class GroupController extends Controller {
         }
 
         // Обновляем даные
-        $result = $this->groupModel->edit($groupId, $groupName);
+        $result = $this->groupModel->edit($id, $name);
 
         if ($result === true) {
             return response()->json([
@@ -235,7 +207,7 @@ class GroupController extends Controller {
     }
 
     /**
-     * Удаление
+     * Удаление группы
      */
     public function remove(int $id) {
         // Искусственная задержка (для режима разработки)
@@ -259,7 +231,36 @@ class GroupController extends Controller {
         ], 500);
     }
 
+    /**
+     * Валидация и подготовка входных данных
+     */
+    private function validate_and_prepare($request, $id = null) {
+        if ($id == 'new') {
+            $id = 0;
+        } elseif (is_numeric($id) && (int)$id > 0) {
+            $id = (int)$id;
+        } else {
+            return 'Неверный идентификатор параметра';
+        }
 
+        // Очищаем от пробелов входные данные
+        $request->merge([
+            'name' => trim($request->name ?? '')
+        ]);
 
-    
+        // Валидация
+        $request->validate([
+            'type_id' => 'integer|in:1,2',
+            'name'    => 'required|string|max:255',
+        ]);
+
+        // Тип
+        $typeId = (int)$request->type_id ?? 0;
+
+        // Наименование
+        $name = $request->name ?? '';
+        $name = preg_replace('/\s+/', ' ', $name);
+
+        return ['typeId' => $typeId, 'name' => $name];
+    }
 }

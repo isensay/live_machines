@@ -45,10 +45,6 @@
 
                     <div class="collapse" id="sidebarMultilevel_lm">
                         <ul class="nav-second-level">
-                            
-                            <li>
-                                <a href="{{ route('lm_group_index') }}">Группы параметров</a>
-                            </li>
                             {{--
                             <li>
                                 <a href="#">Единицы измерения</a>
@@ -64,6 +60,9 @@
                                 <a href="{{ route('lm_comp_index') }}">Комплектации</a>
                             </li>
                             <li>
+                                <a href="{{ route('lm_group_index') }}">Группы параметров</a>
+                            </li>
+                            <li>
                                 <a href="{{ route('lm_model_index') }}">Модели</a>
                             </li>
                             <li>
@@ -72,11 +71,6 @@
                             <li>
                                 <a href="{{ route('lm_country_index') }}">Страны</a>
                             </li>
-                            {{--
-                            <li>
-                                <a href="{{ route('lm_country_list_old') }}">Страны (old)</a>
-                            </li>
-                            --}}
                             <li>
                                 <a href="#" onclick="return resetDatabase(event)">Откатить БД</a>
                             </li>

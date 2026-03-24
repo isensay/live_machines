@@ -20,7 +20,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('livemachines/sprav')->name('lm_')->group(function () {
         // Базовые справочники
         Route::get('/manuf',       [SpravController::class,   'manuf_list'])->name('manuf_list');
-        Route::get('/group',       [SpravController::class,   'group_list'])->name('group_list');
     });
 
     //  Группы параметров

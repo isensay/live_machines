@@ -15,11 +15,10 @@ class GroupModel extends Model
 {
     protected $db;
     protected $pdo;
-
     protected static $eventFired = false; // Чтобы в профайлере не отображалось, что модель подключена несколько раз из за $this->fireModelEvent()
 
     /**
-     * Подключение к БД
+     * Получаем соединение к БД
      */
     public function __construct(array $attributes = [], $connection = null) {
         parent::__construct($attributes);
@@ -116,7 +115,7 @@ class GroupModel extends Model
     /**
      * Получение информации о группе по ID
      */
-    public function get_info_from_id($groupId) {
+    public function get_info_from_id($id) {
         $sql = "
             SELECT
                 `dirty_group_id`            as `id`,
@@ -127,13 +126,13 @@ class GroupModel extends Model
                 AND `dirty_group_id`             = ? 
                 AND `dirty_group_remove_user_id` = 0
         ";
-        return $this->db->selectOne($sql, [(int)$groupId]);
+        return $this->db->selectOne($sql, [(int)$id]);
     }
 
     /**
      * Получение информации о группе по наименованию
      */
-    public function get_id_from_name($typeId, $groupName, $create = false) {
+    public function get_id_from_name($typeId, $name, $create = false) {
         // Тип
         $typeId = (in_array((int)$typeId, [1,2])) ? (int)$typeId : 0;
 
@@ -148,14 +147,14 @@ class GroupModel extends Model
                 AND `dirty_group_name`           = ? 
                 AND `dirty_group_remove_user_id` = 0
         ";
-        $result = $this->db->selectOne($sql, [(int)$typeId, (string)$groupName]);
+        $result = $this->db->selectOne($sql, [(int)$typeId, (string)$name]);
 
         if (!$result && !$create) return 'Запись не найдена';
 
         // Если требуется создать или обновить (например изменить регистр)
         try {
             // Приводим к верхнему регистру
-            $groupName = mb_strtoupper($groupName);
+            $name = mb_strtoupper($name);
 
             // Начинаем транзакцию
             $this->db->beginTransaction();
@@ -169,24 +168,24 @@ class GroupModel extends Model
                     WHERE
                         `dirty_group_id`   = ?
                 ";
-                $this->db->update($sql, [(string)$groupName, $result->id]);
-                $groupId = (int)$result->id;
+                $this->db->update($sql, [(string)$name, $result->id]);
+                $id = (int)$result->id;
             // Создаем
             } else {
                 $sql = "
                     INSERT INTO `dirty_group`
                     SET
-                        `dirty_group_name`          = " . $this->pdo->quote((string)$groupName) . ",
+                        `dirty_group_name`          = " . $this->pdo->quote((string)$name) . ",
                         `dirty_group_dirty_type_id` = " . $this->pdo->quote((int)$typeId) . ",
                         `dirty_group_add_user_id`   = " . $this->pdo->quote((int)auth()->id()) . ",
                         `dirty_group_add_date`      = UNIX_TIMESTAMP()
                 ";
                 $this->db->insert($sql);
-                $groupId = $this->pdo->lastInsertId();
+                $id = $this->pdo->lastInsertId();
             }
 
             $this->db->commit();
-            return $groupId;
+            return $id;
         } catch (\Exception $e) {
             $this->db->rollBack();
             Log::error('Error creating group name: ' . $e->getMessage());
@@ -197,17 +196,17 @@ class GroupModel extends Model
     /**
      * Обновление данных
      */
-    public function edit($groupId, $groupName) {
+    public function edit($id, $name) {
         try {
             $this->db->beginTransaction();
 
-            $groupName = mb_strtoupper($groupName);
+            $name = mb_strtoupper($name);
 
-            $groupInfo = $this->get_info_from_id($groupId);
+            $info = $this->get_info_from_id($id);
 
-            if (!$groupInfo) return 'Группа не найдена';
+            if (!$info) return 'Группа не найдена';
             
-            $this->db->update("UPDATE `dirty_group` SET `dirty_group_name` = ? WHERE `dirty_group_id` = ?", [(string)$groupName, (int)$groupInfo->id]);
+            $this->db->update("UPDATE `dirty_group` SET `dirty_group_name` = ? WHERE `dirty_group_id` = ?", [(string)$name, (int)$info->id]);
 
             $this->db->commit();
             return true;
@@ -221,18 +220,18 @@ class GroupModel extends Model
     /**
      * Удаление
      */
-    public function remove($groupId) {
+    public function remove($id) {
         try {
             // Начинаем транзакцию
             $this->db->beginTransaction();
             
             // Проверяем существует ли запись
-            $record = $this->get_info_from_id($groupId);
+            $info = $this->get_info_from_id($id);
 
-            if (!$record) return 'Запись не найдена';
+            if (!$info) return 'Запись не найдена';
 
             // Отвязываем все параметры от группы
-            $unbind = $this->db->update("
+            $this->db->update("
                 UPDATE `dirty_param`
                 SET
                     `dirty_param_dirty_group_id` = 0
@@ -240,31 +239,32 @@ class GroupModel extends Model
                     AND `dirty_param_dirty_group_id` = ?
                     AND `dirty_param_dirty_type_id`  = ?
                 ",
-                [(int)$groupId, (int)$record->typeId]
+                [(int)$id, (int)$info->typeId]
             );
             
             // Удаляем группу
-            $delete = $this->db->update("
+            $update = $this->db->update("
                 UPDATE `dirty_group`
                 SET
                     `dirty_group_remove_user_id` = ?,
                     `dirty_group_remove_date`    = UNIX_TIMESTAMP()
                 WHERE
                     `dirty_group_id` = ?",
-                [auth()->id(), (int)$groupId]
+                [auth()->id(), (int)$id]
             );
             
-            if ($delete) {
+            // Завершаем транзакцию
+            if ($update) {
                 $this->db->commit();
                 return true;
             }
             
+            // Откатываем транзакцию
             $this->db->rollBack();
 
             return 'Ошибка при удалении';
         } catch (\Exception $e) {
             Log::error('Delete error: '.$e->getMessage());
-
             return 'Ошибка: '.$e->getMessage();
         }
     }
