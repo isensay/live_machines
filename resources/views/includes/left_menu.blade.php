@@ -64,7 +64,7 @@
                                 <a href="{{ route('lm_model_index') }}">Модели</a>
                             </li>
                             <li>
-                                <a href="{{ route('lm_manuf_list') }}">Производители</a>
+                                <a href="{{ route('lm_manuf_index') }}">Производители</a>
                             </li>
                             <li>
                                 <a href="{{ route('lm_country_index') }}">Страны</a>

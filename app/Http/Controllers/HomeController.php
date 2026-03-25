@@ -42,7 +42,7 @@ class HomeController extends Controller
     public function index() {
         $metrics = $this->healthService->getAllMetrics();
 
-        $manufs = $this->manufModel->get_list();
+        $manufs = $this->manufModel->get_list()['data'];
 
         //dump($metrics);
 
