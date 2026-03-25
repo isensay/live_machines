@@ -1,0 +1,91 @@
+/* ===== ОБЩИЕ СТИЛИ ===== */
+#basic-datatable tbody tr { height: 60px; }
+#basic-datatable tbody td { vertical-align: middle !important; line-height: 1.2; }
+#basic-datatable .btn-sm {
+    height: 32px; width: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0 !important;
+}
+#basic-datatable td:nth-child(1) {
+    white-space: normal; word-break: break-word; word-wrap: break-word;
+    overflow-wrap: break-word; max-width: 200px;
+}
+
+#createNewGroupBtn { height: 36px; }
+#editParamModal .btn.remove-value-row { height: 36px; }
+#editParamModal .card-header h5 { margin:0; }
+
+/* ===== АДАПТАЦИЯ ===== */
+@media (max-width: 768px) {
+    .modal-body { padding: 1rem; }
+    #values-table { font-size: 0.85rem; }
+}
+
+/* ===== БЛОК ГРУПП ===== */
+.groups-container {
+    display: flex; gap: 20px; align-items: flex-end;
+}
+.groups-select-wrapper {
+    flex: 1; min-width: 0;
+}
+.groups-btn-wrapper {
+    width: 160px; flex-shrink: 0;
+}
+.groups-btn-wrapper .btn {
+    width: 100%; height: 42px; display: flex;
+    align-items: center; justify-content: center;
+}
+
+/* ===== АДАПТАЦИЯ СПИННЕРА ===== */
+div.dataTables_processing { margin-top:20px !important; height: 12px !important; background:none; }
+
+
+/* ===== ЧТОБЫ ПАГИНАЦИЯ НЕ СМЕЩАЛАСЬ ВВЕРХ ===== */
+/* Выравнивание информации о записях */
+.dataTables_info {
+    padding-top: 0.85em !important;
+    line-height: 2.5 !important;
+}
+/* Выравнивание пагинации */
+.dataTables_paginate {
+    padding-top: 0.5em !important;
+    float: right !important;
+}
+/* Для мобильных устройств */
+@media (max-width: 767px) {
+    .dataTables_info {
+        text-align: center !important;
+        padding-bottom: 10px !important;
+    }
+    
+    .dataTables_paginate {
+        text-align: center !important;
+        float: none !important;
+    }
+}
+/* Выравнивание контейнера с пагинацией */
+div.dataTables_wrapper div.dataTables_paginate {
+    margin-top: 0 !important;
+    text-align: right;
+}
+/* Стили для pagination-rounded (если используете) */
+.pagination-rounded .page-link {
+    border-radius: 30px !important;
+    margin: 0 3px !important;
+}
+
+
+/* Непереносим текст в select2 и в строках где выводится название файла */
+.select2-results, .form-control-plaintext.file-name-display { white-space: nowrap !important; }
+
+
+.special-option {
+    background-color: #f0f7ff !important;
+    color: #0056b3;
+    font-weight: 500;
+}
+.select2-results__option.special-option {
+    background-color: #f0f7ff !important;
+    color: #0056b3;
+    font-weight: 500;
+}

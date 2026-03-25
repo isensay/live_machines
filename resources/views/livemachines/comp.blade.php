@@ -37,11 +37,6 @@
                                 <option value="all" selected>- Все параметры -</option>
                                 <option value="check">- Проверенные -</option>
                                 <option value="nocheck">- Непроверенные -</option>
-                                <option value="0">- Без группы -</option>
-                                <option value="groupandno">- С группой и без -</option>
-                                @foreach($groups as $group)
-                                    <option value="{{ $group->id }}">{{ $group->name }}</option>
-                                @endforeach
                             </select>
                         </div>
                         
@@ -162,68 +157,6 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Блок групп -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="mdi mdi-folder-multiple"></i> Принадлежность к группам параметров</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="alert alert-info alert-dismissible fade show" role="alert">
-                                    Эта кнопка <span class="badge bg-info"><i class="mdi mdi-content-copy copy-group-icon" style="cursor: pointer;"></i></span> копирует выбранную группу из первой строки во все остальные.
-                                </div>
-                                
-                                <div id="group-links-container">
-                                    <!-- Сюда будут добавляться строки с группами -->
-                                </div>
-                                
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-                                    {{--
-                                    <button type="button" class="btn btn-outline-success" id="addGroupLinkBtn">
-                                        <i class="mdi mdi-plus-circle me-1"></i> Добавить привязку к группе
-                                    </button>
-                                    --}}
-                                    <button type="button" class="btn btn-outline-success" id="createNewGroupBtn">
-                                        <i class="mdi mdi-plus-circle me-1"></i> Создать новую группу в справочнике
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Единицы измерения и значения -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="mdi mdi-ruler"></i> Единицы измерения и значения</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="alert alert-info alert-dismissible fade show" role="alert">
-                                    Эта кнопка <span class="badge bg-info"><i class="mdi mdi-content-copy copy-value-icon" style="cursor: pointer;"></i></span> копирует единицу измерения и значение из первой строки во все остальные строки.
-                                </div>
-                                
-                                <div class="table-responsive">
-                                    <table class="table" id="values-table">
-                                        <thead>
-                                            <tr>
-                                                <th style="width: 30%">Единица измерения</th>
-                                                <th style="width: 30%">Значение</th>
-                                                <th style="width: 25%">Файл</th>
-                                                <th style="width: 15%"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="values-container"></tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <td colspan="4">
-                                                    <button type="button" class="btn btn-outline-success" id="addValueRow">
-                                                        <i class="mdi mdi-plus-circle me-1"></i> Добавить значение
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
                     </form>
                 </div>
 
@@ -247,69 +180,6 @@
                     </div>
                 </div>
                 
-                {{--
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-success" id="saveParamBtn">
-                        <i class="mdi mdi-content-save me-1"></i> Сохранить изменения
-                    </button>
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
-                        <i class="mdi mdi-close-circle me-1"></i> Отмена
-                    </button>
-                </div>
-                --}}
-            </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно создания группы -->
-    <div class="modal fade" id="createGroupModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="mdi mdi-folder-plus"></i> Создание группы</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="new_group_name" class="form-label">Название группы</label>
-                        <input type="text" class="form-control" id="new_group_name" placeholder="Введите название новой группы" style="text-transform: uppercase;">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-success" id="saveNewGroupBtn">Создать</button>
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Отмена</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно создания единицы измерения -->
-    <div class="modal fade" id="createUnitModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="mdi mdi-ruler-plus"></i> Создание единицы измерения</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="new_unit_name" class="form-label">Название</label>
-                        <input type="text" class="form-control" id="new_unit_name" placeholder="Например: кг, м, шт, кВт">
-                    </div>
-                    <div class="mb-3">
-                        <label for="new_unit_type" class="form-label">Тип значения</label>
-                        <select class="form-control" id="new_unit_type">
-                            <option value="integer">Целое число</option>
-                            <option value="float">Дробное число</option>
-                            <option value="text">Текст</option>
-                            <option value="boolean">Да/Нет (булево)</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Отмена</button>
-                    <button type="button" class="btn btn-success" id="saveNewUnitBtn">Создать</button>
-                </div>
             </div>
         </div>
     </div>

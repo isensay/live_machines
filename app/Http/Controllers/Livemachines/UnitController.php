@@ -1,8 +1,8 @@
 <?php
 
 /**
- * Контроллер для управления справочником групп
- * Группы имеют следующие типы:
+ * Контроллер для управления справочником единиц измерения
+ * Единицы измерения имеют следующие типы:
  * 1 - Технические характеристики
  * 2 - Комплектации
  */
@@ -13,27 +13,27 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Models\Livemachines\GroupModel;
+use App\Models\Livemachines\UnitModel;
 
 
-class GroupController extends Controller {
+class UnitController extends Controller {
     private $dbConnection;
-    private $groupModel;
+    private $unitModel;
 
     /**
      * Подключение к БД и инициализация моделей
      */
     public function __construct() {
         $this->dbConnection = DB::connection('livemachines');
-        $this->groupModel = new GroupModel([], $this->dbConnection);
+        $this->unitModel    = new UnitModel([], $this->dbConnection);
     }
 
     /**
      * Основная страница
      */
     public function index() {
-        return view('livemachines/group', [
-            'title' => 'Справочник групп параметров'
+        return view('livemachines/unit', [
+            'title' => 'Справочник единиц измерения'
         ]);
     }
 
@@ -46,9 +46,6 @@ class GroupController extends Controller {
             usleep(500000);
         }
 
-        // Тип
-        $typeId = (int)$request->get('type_id', 0);
-
         // Параметры DataTable
         $draw        = $request->get('draw');
         $start       = (int)$request->get('start', 0);
@@ -58,7 +55,7 @@ class GroupController extends Controller {
         $orderDir    = $request->get('order')[0]['dir'] ?? 'asc';
 
         // Получаем список стран
-        $result = $this->groupModel->get_list($typeId, false, $search, $start, $length, $orderColumn, $orderDir);
+        $result = $this->unitModel->get_list($search, $start, $length, $orderColumn, $orderDir);
         
         return response()->json([
             'draw'            => $draw,
@@ -81,8 +78,7 @@ class GroupController extends Controller {
         $validAndPrepareData = $this->validate_and_prepare($request, 'new');
 
         if (is_array($validAndPrepareData)) {
-            $typeId = $validAndPrepareData['typeId'];
-            $name   = $validAndPrepareData['name'];
+            $name = $validAndPrepareData['name'];
         } else {
             return response()->json([
                 'success' => false,
@@ -91,7 +87,7 @@ class GroupController extends Controller {
         }
 
         // Проверяем есть ли уже такая запись
-        $id = $this->groupModel->get_id_from_name($typeId, $name);
+        $id = $this->unitModel->get_id_from_name($name);
 
         if (is_numeric($id)) {
             return response()->json([
@@ -101,7 +97,7 @@ class GroupController extends Controller {
         }
 
         // Создаем группу
-        $id = $this->groupModel->get_id_from_name($typeId, $name, true);
+        $id = $this->unitModel->get_id_from_name($name, true);
 
         if (is_numeric($id)) {
             return response()->json([
@@ -109,7 +105,7 @@ class GroupController extends Controller {
                 'message' => '',
                 'group' => [
                     'id'   => $id,
-                    'name' => mb_strtoupper($name)
+                    'name' => $name
                 ]
             ]);
         } else {
@@ -146,7 +142,7 @@ class GroupController extends Controller {
         $request->validate(['id' => 'integer']);
 
         // Получаем информацию
-        $info = $this->groupModel->get_info_from_id($id);
+        $info = $this->unitModel->get_info_from_id($id);
 
         if (!$info) {
             return response()->json([
@@ -186,7 +182,7 @@ class GroupController extends Controller {
         }
 
         // Обновляем даные
-        $result = $this->groupModel->edit($id, $name);
+        $result = $this->unitModel->set($id, $name);
 
         if ($result === true) {
             return response()->json([
@@ -210,7 +206,7 @@ class GroupController extends Controller {
             usleep(500000);
         }
 
-        $result = $this->groupModel->remove($id);
+        $result = $this->unitModel->remove($id);
 
         if ($result === true) {
             return response()->json([
@@ -245,17 +241,13 @@ class GroupController extends Controller {
 
         // Валидация
         $request->validate([
-            'type_id' => 'integer|in:1,2',
-            'name'    => 'required|string|max:255',
+            'name' => 'required|string|max:255',
         ]);
-
-        // Тип
-        $typeId = (int)$request->type_id ?? 0;
 
         // Наименование
         $name = $request->name ?? '';
         $name = preg_replace('/\s+/', ' ', $name);
 
-        return ['typeId' => $typeId, 'name' => $name];
+        return ['name' => $name];
     }
 }

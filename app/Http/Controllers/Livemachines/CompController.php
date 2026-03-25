@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Livemachines\ParamModel;
 use App\Models\Livemachines\GroupModel;
+use App\Models\Livemachines\UnitModel;
 
 class CompController extends Controller {
     private $techParam = null;
@@ -19,11 +20,13 @@ class CompController extends Controller {
     private $paramTypeId = 2; // Комплектации
     private $paramModel;
     private $groupModel;
+    private $unitModel;
 
     public function __construct() {
         $this->dbConnection = DB::connection('livemachines');
         $this->paramModel   = new ParamModel([], $this->dbConnection, $this->paramTypeId);
         $this->groupModel   = new GroupModel([], $this->dbConnection, $this->paramTypeId);
+        $this->unitModel    = new UnitModel([],  $this->dbConnection, $this->paramTypeId);
     }
 
     /**
@@ -70,8 +73,8 @@ class CompController extends Controller {
     public function references() {
         try {
             $groups = $this->groupModel->get_list($this->paramTypeId)['data']; // Получение списка всех групп технических характеристик
-            $units  = $this->paramModel->get_units(); // Получение списка всех единиц измерения
-            $files  = $this->paramModel->get_files(); // Получение списка всех файлов
+            $units  = []; // Получение списка всех единиц измерения
+            $files  = []; // Получение списка всех файлов
         } catch(\Exception $e) {
             Log::error('Error getting references: ' . $e->getMessage());
             

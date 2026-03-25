@@ -55,7 +55,7 @@
                                 <a href="{{ route('lm_group_index') }}">Группы</a>
                             </li>
                             <li>
-                                <a style="color:gray;" href="#">Единицы измерения</a>
+                                <a href="{{ route('lm_unit_index') }}">Единицы измерения</a>
                             </li>
                             <li>
                                 <a style="color:gray;" href="#">Значения</a>

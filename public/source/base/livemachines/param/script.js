@@ -612,9 +612,10 @@ $(document).ready(function() {
         
         // Инициализируем Select2 для единицы измерения
         const $unitSelect = $newRow.find('.unit-select');
+        $unitSelect.append(`<option value="0" data-type="text">- Выберите -</option>`);
         references.units.forEach(unit => {
             const selected = (value.unit_id == unit.id) ? 'selected' : '';
-            $unitSelect.append(`<option value="${unit.id}" data-type="${unit.type}" ${selected}>${unit.name}</option>`);
+            $unitSelect.append(`<option value="${unit.id}" data-type="text" ${selected}>${unit.name}</option>`);
         });
         
         $unitSelect.select2({
@@ -937,8 +938,9 @@ $(document).ready(function() {
             }
             
             $this.empty();
+            $this.append(`<option value="0" data-type="text">- Выберите -</option>`);
             references.units.forEach(unit => {
-                $this.append(`<option value="${unit.id}" data-type="${unit.type}">${unit.name}</option>`);
+                $this.append(`<option value="${unit.id}" data-type="text">${unit.name}</option>`);
             });
             
             $this.select2({
