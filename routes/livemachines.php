@@ -6,6 +6,7 @@
 
 use App\Http\Controllers\Livemachines\GroupController;   // Группы
 use App\Http\Controllers\Livemachines\UnitController;    // Единицы измерения
+use App\Http\Controllers\Livemachines\ValueController;   // Значения
 use App\Http\Controllers\Livemachines\TechController;    // Технические характеристики
 use App\Http\Controllers\Livemachines\CompController;    // Комплектации
 use App\Http\Controllers\Livemachines\ModelController;   // Страны
@@ -106,6 +107,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/edit/{id}',    [UnitController::class, 'edit'])->name('edit');     // Получение данных для редактирования (загрузка информации в окно)
                     Route::post('/update/{id}', [UnitController::class, 'update'])->name('update'); // Сохранение изменений имеющейся записи (сохранение)
                     Route::delete('/{id}',      [UnitController::class, 'remove'])->name('remove'); // Удаление записи
+                });
+            });
+        });
+    });
+
+    // Значения
+    Route::prefix('livemachines/sprav')->name('lm_value_')->group(function () {
+        Route::prefix('value')->group(function () {
+            // Основная страница
+            Route::get('/', [ValueController::class, 'index'])->name('index');
+
+            // Ajax - маршруты
+            Route::middleware('ajax')->group(function () {
+                Route::get('/data',    [ValueController::class, 'data'])->name('data');     // Получение списка
+                Route::post('/create', [ValueController::class, 'create'])->name('create'); // Создание записи (сохранение)
+
+                // Маршруты с ID
+                Route::whereNumber('id')->group(function () {
+                    Route::get('/edit/{id}',    [ValueController::class, 'edit'])->name('edit');     // Получение данных для редактирования (загрузка информации в окно)
+                    Route::post('/update/{id}', [ValueController::class, 'update'])->name('update'); // Сохранение изменений имеющейся записи (сохранение)
+                    Route::delete('/{id}',      [ValueController::class, 'remove'])->name('remove'); // Удаление записи
                 });
             });
         });

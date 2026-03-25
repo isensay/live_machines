@@ -58,7 +58,7 @@
                                 <a href="{{ route('lm_unit_index') }}">Единицы измерения</a>
                             </li>
                             <li>
-                                <a style="color:gray;" href="#">Значения</a>
+                                <a href="{{ route('lm_value_index') }}">Значения</a>
                             </li>
                             <li>
                                 <a href="{{ route('lm_model_index') }}">Модели</a>
