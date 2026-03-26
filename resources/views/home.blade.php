@@ -628,6 +628,12 @@
     <script src="/source/base/libs/select2/js/select2.min.js"></script>
     <script src="/source/base/libs/select2/js/i18n/ru.js"></script>
     <script src="/source/base/libs/sweetalert2/sweetalert2.min.js"></script>
+
+    <script>
+        const countriesFromDb = @json($countries);
+        console.log(countriesFromDb);
+    </script>
+
     <script src="/source/base/home/script.js?<?=time()?>"></script>
 @endsection
 

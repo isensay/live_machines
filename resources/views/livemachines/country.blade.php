@@ -77,13 +77,31 @@
                         <!-- Основная информация -->
                         <div class="card">
                             <div class="card-body">
-                                <div class="row">
+                                <div class="row mb-4">
                                     <div class="col-md-12">
                                             <label for="edit_country_name" class="form-label">
                                                 Название страны <span class="text-danger">*</span>
                                             </label>
                                             <input type="text" class="form-control" id="edit_country_name" 
                                                    name="name" required placeholder="Введите название страны">
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-md-12">
+                                            <label for="edit_country_latitude" class="form-label">
+                                                Широта
+                                            </label>
+                                            <input type="text" class="form-control" id="edit_country_latitude" 
+                                                   name="name" required placeholder="">
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-md-12">
+                                            <label for="edit_country_longitude" class="form-label">
+                                                Долгота
+                                            </label>
+                                            <input type="text" class="form-control" id="edit_country_longitude" 
+                                                   name="name" required placeholder="">
                                     </div>
                                 </div>
                             </div>
@@ -129,5 +147,6 @@
     <script src="/source/base/libs/select2/js/select2.min.js"></script>
     <script src="/source/base/libs/select2/js/i18n/ru.js"></script>
     <script src="/source/base/libs/sweetalert2/sweetalert2.min.js"></script>
+    <script src="/source/base/libs/jquery-mask-plugin/jquery.mask.min.js"></script>
     <script src="/source/base/livemachines/country/script.js?<?=time()?>"></script>
 @endsection

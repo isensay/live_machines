@@ -11,6 +11,7 @@ use App\Models\Livemachines\GroupModel;
 use App\Models\Livemachines\ParamModel;
 use App\Models\Livemachines\ModelModel;
 use App\Models\Livemachines\ManufModel;
+use App\Models\Livemachines\CountryModel;
 
 class HomeController extends Controller
 {
@@ -23,26 +24,28 @@ class HomeController extends Controller
     private $compModel;
     private $modelModel;
     private $manufModel;
+    private $countryModel;
 
     public function __construct(HealthCheckService $healthService) {
         $this->healthService = $healthService;
 
         $this->dbConnection = DB::connection('livemachines');
-        $this->fileModel    = new FileModel([], $this->dbConnection);
-        $this->groupModel   = new GroupModel([], $this->dbConnection, 1);
-        $this->techModel    = new ParamModel([], $this->dbConnection, 1);
-        $this->compModel    = new ParamModel([], $this->dbConnection, 2);
-        $this->modelModel   = new ModelModel([], $this->dbConnection);
-        $this->manufModel   = new ManufModel([], $this->dbConnection);
+        $this->fileModel    = new FileModel([],    $this->dbConnection);
+        $this->groupModel   = new GroupModel([],   $this->dbConnection, 1);
+        $this->techModel    = new ParamModel([],   $this->dbConnection, 1);
+        $this->compModel    = new ParamModel([],   $this->dbConnection, 2);
+        $this->modelModel   = new ModelModel([],   $this->dbConnection);
+        $this->manufModel   = new ManufModel([],   $this->dbConnection);
+        $this->countryModel = new CountryModel([], $this->dbConnection);
     }
 
     /**
      * Главная страница
      */
     public function index() {
-        $metrics = $this->healthService->getAllMetrics();
-
-        $manufs = $this->manufModel->get_list()['data'];
+        $metrics   = $this->healthService->getAllMetrics();
+        $countries = $this->countryModel->get_list()['data'];
+        $manufs    = $this->manufModel->get_list()['data'];
 
         //dump($metrics);
 
@@ -68,6 +71,8 @@ class HomeController extends Controller
                 'mysqlUsed'     => round($metrics['mysql']['total_databases']['size_mb'], 1),
                 'mysqlUsedPer'  => round(($metrics['mysql']['total_databases']['size_gb'] / $metrics['mysql']['disk_usage']['total_gb']) * 100, 1),
             ],
+
+            'countries' => $countries,
 
             // Список производителей
             'manufs' => $manufs,

@@ -79,13 +79,23 @@ class CountryController extends Controller {
 
         // Валидация
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name'      => 'required|string|max:255',
+            'latitude'  => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         $countryName = $request->name ?? '';
         $countryName = preg_replace('/\s+/', ' ', $countryName);
 
-        return ['name' => $countryName];
+        if ($request->has('latitude')) {
+            $latitude = round($request->latitude, 6);
+        }
+        
+        if ($request->has('longitude')) {
+            $longitude = round($request->longitude, 6);
+        }
+
+        return ['name' => $countryName, 'latitude' => $latitude, 'longitude' => $longitude];
     }
 
     /**
@@ -102,6 +112,9 @@ class CountryController extends Controller {
 
         if (is_array($validAndPrepareData)) {
             $countryName = $validAndPrepareData['name'];
+            $latitude    = $validAndPrepareData['latitude'];
+            $longitude   = $validAndPrepareData['longitude'];
+            
         } else {
             return response()->json([
                 'success' => false,
@@ -110,7 +123,7 @@ class CountryController extends Controller {
         }
 
         // Проверяем есть ли уже такая запись
-        $countryId = $this->countryModel->get_id_from_name($countryName);
+        $countryId = $this->countryModel->get_id_from_name($countryName, $latitude, $longitude);
 
         if (is_numeric($countryId)) {
             return response()->json([
@@ -120,7 +133,7 @@ class CountryController extends Controller {
         }
 
         // Добавляем новую запись
-        $result = $this->countryModel->create($countryName);
+        $result = $this->countryModel->create($countryName, $latitude, $longitude);
 
         if ($result === true) {
             return response()->json([
@@ -151,8 +164,10 @@ class CountryController extends Controller {
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'id'   => null,
-                    'name' => '',
+                    'id'        => null,
+                    'name'      => '',
+                    'latitude'  => '',
+                    'longitude' => ''
                 ]
             ]);
         }
@@ -173,8 +188,10 @@ class CountryController extends Controller {
         return response()->json([
             'success' => true,
             'data' => [
-                'id'   => $country->id,
-                'name' => $country->name,
+                'id'        => $country->id,
+                'name'      => $country->name,
+                'latitude'  => $country->latitude,
+                'longitude' => $country->longitude
             ]
         ]);
     }
@@ -193,6 +210,8 @@ class CountryController extends Controller {
 
         if (is_array($validAndPrepareData)) {
             $countryName = $validAndPrepareData['name'];
+            $latitude    = $validAndPrepareData['latitude'];
+            $longitude   = $validAndPrepareData['longitude'];
         } else {
             return response()->json([
                 'success' => false,
@@ -201,7 +220,7 @@ class CountryController extends Controller {
         }
 
         // Обновляем даные
-        $result = $this->countryModel->edit($countryId, $countryName);
+        $result = $this->countryModel->set($countryId, $countryName, $latitude, $longitude);
 
         if ($result === true) {
             return response()->json([

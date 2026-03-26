@@ -10,6 +10,40 @@ $(document).ready(function() {
     const deleteUrl      = $table.data('delete-url').replace('REPLACE_WITH_ID', '');
 
     initDataTable();
+
+    // ===== ИНИЦИАЛИЗАЦИЯ МАСКИ ДЛЯ КООРДИНАТ =====
+    // Для широты (от -90 до 90) - максимум 2 цифры целой части
+    $('#edit_country_latitude').mask('00.######', {
+        translation: {
+            '0': { pattern: /[0-9\-]/, optional: true }
+        }
+    }).on('blur', function() {
+        let value = $(this).val();
+        if (value && value !== '-') {
+            let num = parseFloat(value);
+            if (!isNaN(num)) {
+                if (num < -90) num = -90;
+                if (num > 90) num = 90;
+                $(this).val(num.toFixed(6));
+            }
+        }
+    });
+    // Для долготы (от -180 до 180) - максимум 3 цифры целой части
+    $('#edit_country_longitude').mask('000.######', {
+        translation: {
+            '0': { pattern: /[0-9\-]/, optional: true }
+        }
+    }).on('blur', function() {
+        let value = $(this).val();
+        if (value && value !== '-') {
+            let num = parseFloat(value);
+            if (!isNaN(num)) {
+                if (num < -180) num = -180;
+                if (num > 180) num = 180;
+                $(this).val(num.toFixed(6));
+            }
+        }
+    });
     
     // ===== DATATABLE В РЕЖИМЕ SERVER-SIDE =====
     function initDataTable() {
@@ -49,7 +83,7 @@ $(document).ready(function() {
                     render:    (data) => data || '<span class="text-muted">-</span>' 
                 },
                 {
-                    data:       'countryId',
+                    data:       'id',
                     name:       'actions',
                     orderable:  false,
                     searchable: false,
@@ -57,12 +91,12 @@ $(document).ready(function() {
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-danger btn-sm btn-rounded edit-btn" 
                                     title="Редактировать" data-id="${data}" 
-                                    data-name="${(row.countryName || '').replace(/'/g, "\\'")}">
+                                    data-name="${(row.name || '').replace(/'/g, "\\'")}">
                                 <i class="mdi mdi-pencil"></i>
                             </button>
                             <button type="button" class="btn btn-primary btn-sm btn-rounded delete-btn" 
                                     title="Удалить" data-id="${data}" 
-                                    data-name="${(row.countryName || '').replace(/'/g, "\\'")}">
+                                    data-name="${(row.name || '').replace(/'/g, "\\'")}">
                                 <i class="mdi mdi-delete"></i>
                             </button>
                         </div>
@@ -153,8 +187,11 @@ $(document).ready(function() {
 
     // ===== ЗАПОЛНЕНИЕ МОДАЛЬНОГО ОКНА =====
     function fillEditModal(data) {
+        console.log(data);
         $('#edit_country_id').val(data.id);
         $('#edit_country_name').val(data.name);
+        $('#edit_country_latitude').val(data.latitude);
+        $('#edit_country_longitude').val(data.longitude);
     }
 
     // ===== СОЗДАНИЕ НОВОГО ПАРАМЕТРА =====
@@ -165,7 +202,7 @@ $(document).ready(function() {
         $('#modalTitleText').text('Создание');
         $('#editCountryModalLabel i').attr('class', 'mdi mdi-plus-circle');
 
-        fillEditModal([id => 0, name => '']);
+        fillEditModal({id: 'new', name: '', latitude: '', longitude: ''});
         
         // Используем специальный URL для создания с параметром new=true
         $('#editCountryModal').modal('show');
@@ -182,7 +219,9 @@ $(document).ready(function() {
     $('#saveCountryBtn').on('click', function() {
         const formData = {
             '_token': csrfToken,
-            'name': $('#edit_country_name').val()
+            'name': $('#edit_country_name').val(),
+            'latitude': $('#edit_country_latitude').val(),
+            'longitude': $('#edit_country_longitude').val()
         };
         
         if (!formData.name) {
@@ -197,7 +236,7 @@ $(document).ready(function() {
 
         // Определяем URL для сохранения (создание или обновление)
         let saveUrl;
-        if (!id) {
+        if (id == 'new') {
             // Новый параметр
             saveUrl = createUrl;
         } else {

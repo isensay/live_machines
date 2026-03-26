@@ -73,6 +73,8 @@ class CountryModel extends Model
             SQL_CALC_FOUND_ROWS
             `id`,
             `name`,
+            `latitude`,
+            `longitude`,
             IF(`manufs` > 0, `manufs`, '') as `manufs`,
             IF(`files`  > 0, `files`,  '') as `files`
         FROM
@@ -80,6 +82,8 @@ class CountryModel extends Model
                 SELECT
                     `dirty_country_id`               as `id`,
                     `dirty_country_name`             as `name`,
+                    IF(`dirty_country_latitude`  <> 0, `dirty_country_latitude`, '')  as `latitude`,
+                    IF(`dirty_country_longitude` <> 0, `dirty_country_longitude`, '') as `longitude`,
                     COUNT(DISTINCT `dirty_manuf_id`) as `manufs`,
                     COUNT(DISTINCT `dirty_file_id`)  as `files`
                 FROM `dirty_country`
@@ -118,8 +122,10 @@ class CountryModel extends Model
         $sql =
         "
         SELECT
-            `dirty_country_id`   as `id`,
-            `dirty_country_name` as `name`
+            `dirty_country_id`        as `id`,
+            `dirty_country_name`      as `name`,
+            IF(`dirty_country_latitude`  <> 0, `dirty_country_latitude`, '')  as `latitude`,
+            IF(`dirty_country_longitude` <> 0, `dirty_country_longitude`, '') as `longitude`
         FROM `dirty_country`
         WHERE 1
             AND `dirty_country_id` = ?
@@ -132,7 +138,7 @@ class CountryModel extends Model
      * Получение информации ID по наименованию
      * при $create = true: создается запись, если ее нет
      */
-    public function get_id_from_name($countryName, $create = false) {
+    public function get_id_from_name($countryName, $latitude, $longitude, $create = false) {
         try {
             $sql =
             "
@@ -149,9 +155,9 @@ class CountryModel extends Model
             if ($create == true) {
                 // Обновляем, если допустим требуется поменять регистр
                 if ($countryId > 0) {
-                    $this->db->update("UPDATE `dirty_country` SET `dirty_country_name` = ? WHERE `dirty_country_id` = ?", [(string)$countryName, (int)$countryId]);
+                    $this->db->update("UPDATE `dirty_country` SET `dirty_country_name` = ?, `dirty_country_latitude` = ?, `dirty_country_longitude` = ? WHERE `dirty_country_id` = ?", [(string)$countryName, (float)$latitude, (float)$longitude, (int)$countryId]);
                 } else {
-                    $this->db->insert("INSERT INTO `dirty_country` SET `dirty_country_name` = ?", [(string)$countryName]);
+                    $this->db->insert("INSERT INTO `dirty_country` SET `dirty_country_name` = ?, `dirty_country_latitude` = ?, `dirty_country_longitude` = ?", [(string)$countryName, (float)$latitude, (float)$longitude]);
                     $countryId = $this->pdo->lastInsertId();
                 }
             } elseif($countryId == 0) {
@@ -168,11 +174,11 @@ class CountryModel extends Model
     /**
      * Создание новой записи
      */
-    public function create($countryName) {
+    public function create($countryName, $latitude, $longitude) {
         try {
             $this->db->beginTransaction();
 
-            $countryId = $this->get_id_from_name($countryName, true);
+            $countryId = $this->get_id_from_name($countryName, $latitude, $longitude, true);
 
             if (is_numeric($countryId)) {
                 $this->db->commit();
@@ -191,11 +197,11 @@ class CountryModel extends Model
     /**
      * Обновление данных
      */
-    public function edit($countryId, $countryName) {
+    public function set($countryId, $countryName, $latitude, $longitude) {
         try {
             $this->db->beginTransaction();
 
-            $dbCountryId = $this->get_id_from_name($countryName, true);
+            $dbCountryId = $this->get_id_from_name($countryName, $latitude, $longitude, true);
         
             if (!is_numeric($dbCountryId)) return $dbCountryId;
 
