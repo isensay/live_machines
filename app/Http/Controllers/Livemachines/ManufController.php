@@ -1,10 +1,7 @@
 <?php
 
 /**
- * Контроллер для управления справочником единиц измерения
- * Единицы измерения имеют следующие типы:
- * 1 - Технические характеристики
- * 2 - Комплектации
+ * Контроллер для управления справочником производителей
  */
 
 namespace App\Http\Controllers\Livemachines;
@@ -14,18 +11,21 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Livemachines\ManufModel;
+use App\Models\Livemachines\CountryModel;
 
 
 class ManufController extends Controller {
     private $dbConnection;
     private $manufModel;
+    private $countryModel;
 
     /**
      * Подключение к БД и инициализация моделей
      */
     public function __construct() {
         $this->dbConnection = DB::connection('livemachines');
-        $this->manufModel    = new ManufModel([], $this->dbConnection);
+        $this->manufModel   = new ManufModel([],   $this->dbConnection);
+        $this->countryModel = new CountryModel([], $this->dbConnection);
     }
 
     /**
@@ -33,7 +33,8 @@ class ManufController extends Controller {
      */
     public function index() {
         return view('livemachines/manuf', [
-            'title' => 'Справочник единиц измерения'
+            'title'     => 'Справочник единиц измерения',
+            'countries' => $this->countryModel->get_list()['data']
         ]);
     }
 
@@ -78,40 +79,27 @@ class ManufController extends Controller {
         $validAndPrepareData = $this->validate_and_prepare($request, 'new');
 
         if (is_array($validAndPrepareData)) {
-            $name = $validAndPrepareData['name'];
+            $name    = $validAndPrepareData['name'];
+            $country = $validAndPrepareData['country'];
         } else {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка: '.$validAndPrepareData
+                'message' => $validAndPrepareData
             ]);
         }
 
-        // Проверяем есть ли уже такая запись
-        $id = $this->manufModel->get_id_from_name($name);
+        // Создаем запись
+        $result = $this->manufModel->create($name, $country);
 
-        if (is_numeric($id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка: запись уже существует'
-            ]);
-        }
-
-        // Создаем группу
-        $id = $this->manufModel->get_id_from_name($name, true);
-
-        if (is_numeric($id)) {
+        if ($result === true) {
             return response()->json([
                 'success' => true,
-                'message' => '',
-                'group' => [
-                    'id'   => $id,
-                    'name' => $name
-                ]
+                'message' => ''
             ]);
         } else {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка: '.$id
+                'message' => 'Ошибка: ' . $result
             ]);
         }
     }
@@ -132,8 +120,9 @@ class ManufController extends Controller {
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'id'   => null,
-                    'name' => '',
+                    'id'      => null,
+                    'name'    => '',
+                    'country' => 0,
                 ]
             ]);
         }
@@ -154,8 +143,9 @@ class ManufController extends Controller {
         return response()->json([
             'success' => true,
             'data' => [
-                'id'   => $info->id,
-                'name' => $info->name,
+                'id'      => $info->id,
+                'name'    => $info->name,
+                'country' => $info->country
             ]
         ]);
     }
@@ -173,7 +163,8 @@ class ManufController extends Controller {
         $validAndPrepareData = $this->validate_and_prepare($request, $id);
 
         if (is_array($validAndPrepareData)) {
-            $name = $validAndPrepareData['name'];
+            $name    = $validAndPrepareData['name'];
+            $country = $validAndPrepareData['country'];
         } else {
             return response()->json([
                 'success' => false,
@@ -181,8 +172,19 @@ class ManufController extends Controller {
             ]);
         }
 
+        // Проверяем что есть такая страна
+        if ($country > 0) {
+            $dbCountry = $this->countryModel->get_info_from_id($country);
+            if (!$dbCountry) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка: страна не найдена'
+                ]);
+            }
+        }
+
         // Обновляем даные
-        $result = $this->manufModel->set($id, $name);
+        $result = $this->manufModel->set($id, $name, $country);
 
         if ($result === true) {
             return response()->json([
@@ -226,6 +228,7 @@ class ManufController extends Controller {
      * Валидация и подготовка входных данных
      */
     private function validate_and_prepare($request, $id = null) {
+        Log::debug($request);
         if ($id == 'new') {
             $id = 0;
         } elseif (is_numeric($id) && (int)$id > 0) {
@@ -241,13 +244,17 @@ class ManufController extends Controller {
 
         // Валидация
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name'    => 'required|string|max:255',
+            'country' => 'integer',
         ]);
 
         // Наименование
         $name = $request->name ?? '';
         $name = preg_replace('/\s+/', ' ', $name);
 
-        return ['name' => $name];
+        // Страна
+        $country = (int)$request->country;
+
+        return ['name' => $name, 'country' => $country];
     }
 }

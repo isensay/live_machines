@@ -41,6 +41,7 @@
                                         <thead>
                                             <tr>
                                                 <th>Название</th>
+                                                <th width="10%">Страна</th>
                                                 <th width="10%">Моделей</th>
                                                 <th width="1%">Файлов</th>
                                                 <th width="1%"></th>
@@ -75,13 +76,29 @@
                         <input type="hidden" id="edit_id" name="id">
                         <div class="card">
                             <div class="card-body">
-                                <div class="row">
+                                <!-- Название производителя -->
+                                <div class="row mb-3">
                                     <div class="col-md-12">
                                         <label for="edit_name" class="form-label">
-                                            Название
+                                            Название производителя
                                             <span class="text-danger">*</span>
                                         </label>
                                         <input type="text" class="form-control" id="edit_name" name="name" required>
+                                    </div>
+                                </div>
+                                <!-- Название производителя -->
+                                <div class="row" style="z-index:10000 !important;">
+                                    <div class="col-md-12">
+                                        <label for="edit_country" class="form-label">
+                                            Страна
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <select id="edit_country" name="country" class="form-control" data-toggle="select2" style="width: 100%;">
+                                            <option value="0" selected>- Выберите -</option>
+                                            @foreach($countries as $country)
+                                                <option value="{{ $country->id }}">{{ $country->name }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                 </div>
                             </div>

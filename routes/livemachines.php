@@ -12,18 +12,8 @@ use App\Http\Controllers\Livemachines\CompController;    // Комплектац
 use App\Http\Controllers\Livemachines\ModelController;   // Модели
 use App\Http\Controllers\Livemachines\ManufController;   // Производители
 use App\Http\Controllers\Livemachines\CountryController; // Страны
-use App\Http\Controllers\Livemachines\SpravController;   // ВРЕМЕННЫЙ КОНТРОЛЛЕР
-
-// Запись в БД livemachines данных из json-файлов (не активно)
-//Route::get("/json", [JsonController::class, "index"])->name("json");
 
 Route::middleware(['auth', 'verified'])->group(function () {
-
-    // Все маршруты справочников livemachines (для меню слева)
-    //Route::prefix('livemachines/sprav')->name('lm_')->group(function () {
-        // Базовые справочники
-        //Route::get('/manuf',       [SpravController::class,   'manuf_list'])->name('manuf_list');
-    //});
 
     // Технические характеристики
     Route::prefix('livemachines/sprav')->name('lm_tech_')->group(function () {
@@ -147,8 +137,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
                 // Маршруты с ID
                 Route::whereNumber('id')->group(function () {
-                    Route::get('/edit/{id}',    [ModelController::class, 'edit'])->name('edit');       // Редактирование модели (загрузка информации в окно)
-                    Route::post('/update/{id}', [ModelController::class, 'update'])->name('update');   // Редактирование модели (сохранение)
+                    Route::get('/edit/{id}',    [ModelController::class, 'edit'])->name('edit');     // Редактирование модели (загрузка информации в окно)
+                    Route::post('/update/{id}', [ModelController::class, 'update'])->name('update'); // Редактирование модели (сохранение)
                     Route::delete('/{id}',      [ModelController::class, 'remove'])->name('remove'); // Удаление модели
                 });
             });
@@ -280,5 +270,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return redirect($previousUrl)->with('error', 'Ошибка: ' . $e->getMessage());
         }
     });
+
+    // Запись в БД livemachines данных из json-файлов (не активно)
+    //Route::get("/json", [JsonController::class, "index"])->name("json");
 
 });

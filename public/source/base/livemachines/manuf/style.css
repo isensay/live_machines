@@ -89,3 +89,13 @@ div.dataTables_wrapper div.dataTables_paginate {
     color: #0056b3;
     font-weight: 500;
 }
+
+/* ===== АДАПТАЦИЯ SELECT2 ===== */
+/* Увеличиваем z-index для выпадающего списка Select2 */
+.select2-container--open {
+    z-index: 9999 !important;
+}
+/* Для dropdown внутри модального окна */
+.modal .select2-container--open {
+    z-index: 9999 !important;
+}

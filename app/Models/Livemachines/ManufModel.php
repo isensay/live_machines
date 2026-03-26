@@ -36,7 +36,7 @@ class ManufModel extends Model
     /**
      * Получение списка
      */
-    public function get_list($search = "", $start = 0, $length = 0, $orderColumn = 'name', $orderDir = 'asc') {
+    public function get_list($search = "", $start = 0, $length = 0, $orderColumn = 0, $orderDir = 'asc') {
         // Допустимые названия полей
         $columns = [
             0 => 'name'
@@ -59,7 +59,7 @@ class ManufModel extends Model
                 $orderDir = 'asc'; // Значение по умолчанию
             }
 
-            $sqlSort = "ORDER BY `{$orderField}` {$orderDir}";
+            $sqlSort = "ORDER BY `{$orderField}` " . strtoupper($orderDir);
         } else {
             $sqlSort = "";
         }
@@ -76,12 +76,12 @@ class ManufModel extends Model
                 COUNT(DISTINCT `dirty_model_id`) as `models`,
                 COUNT(DISTINCT `dirty_file_id`)  as `files`
             FROM `dirty_manuf`
-            LEFT JOIN `dirty_manuf_file`   ON (`dirty_manuf_id`   = `dirty_manuf_file_dirty_manuf_id`)
-            LEFT JOIN `dirty_file`         ON (`dirty_file_id`    = `dirty_manuf_file_dirty_file_id`)
-            LEFT JOIN `dirty_model_file`   ON (`dirty_file_id`    = `dirty_model_file_dirty_file_id`  AND `dirty_file_remove_user_id`  = 0)
-            LEFT JOIN `dirty_model`        ON (`dirty_model_id`   = `dirty_model_file_dirty_model_id` AND `dirty_model_remove_user_id` = 0)
-            LEFT JOIN `dirty_country_file` ON (`dirty_file_id`    = `dirty_country_file_dirty_file_id`)
-            LEFT JOIN `dirty_country`      ON (`dirty_country_id` = `dirty_country_file_dirty_country_id`)
+            LEFT JOIN `dirty_manuf_file`    ON (`dirty_manuf_id`   = `dirty_manuf_file_dirty_manuf_id`)
+            LEFT JOIN `dirty_file`          ON (`dirty_file_id`    = `dirty_manuf_file_dirty_file_id`)
+            LEFT JOIN `dirty_model_file`    ON (`dirty_file_id`    = `dirty_model_file_dirty_file_id`     AND `dirty_file_remove_user_id`  = 0)
+            LEFT JOIN `dirty_model`         ON (`dirty_model_id`   = `dirty_model_file_dirty_model_id`    AND `dirty_model_remove_user_id` = 0)
+            LEFT JOIN `dirty_manuf_country` ON (`dirty_manuf_id`   = `dirty_manuf_country_dirty_manuf_id` AND `dirty_manuf_country_remove_user_id` = 0)
+            LEFT JOIN `dirty_country`       ON (`dirty_country_id` = `dirty_manuf_country_dirty_country_id`)
             WHERE 1
                 {$sqlWhereSearch}
                 AND `dirty_manuf_remove_user_id` = 0
@@ -112,8 +112,10 @@ class ManufModel extends Model
         $sql = "
             SELECT
                 `dirty_manuf_id`   as `id`,
-                `dirty_manuf_name` as `name`
+                `dirty_manuf_name` as `name`,
+                MAX(IF(`dirty_manuf_country_dirty_country_id` IS NOT NULL, `dirty_manuf_country_dirty_country_id`, 0)) as `country`
             FROM `dirty_manuf`
+            LEFT JOIN `dirty_manuf_country` ON (`dirty_manuf_id` = `dirty_manuf_country_dirty_manuf_id` AND `dirty_manuf_country_remove_user_id` = 0)
             WHERE 1
                 AND `dirty_manuf_id`             = ? 
                 AND `dirty_manuf_remove_user_id` = 0
@@ -124,52 +126,20 @@ class ManufModel extends Model
     /**
      * Получение информации ID записи по наименованию
      */
-    public function get_id_from_name($name, $create = false) {
-        // Ищем группу в БД
-        $sql = "
-            SELECT
-                `dirty_manuf_id`   as `id`,
-                `dirty_manuf_name` as `name`
-            FROM `dirty_manuf` 
-            WHERE 1
-                AND `dirty_manuf_name`           = ? 
-                AND `dirty_manuf_remove_user_id` = 0
-        ";
-        $result = $this->db->selectOne($sql, [(string)$name]);
-
-        if (!$result && !$create) return 'Запись не найдена';
-
-        // Если требуется создать или обновить (например изменить регистр)
+    public function get_id_from_name($name) {
         try {
-            // Начинаем транзакцию
-            $this->db->beginTransaction();
-
-            // Обновляем регистр
-            if ($result) {
-                $sql = "
-                    UPDATE `dirty_manuf`
-                    SET
-                        `dirty_manuf_name` = ?
-                    WHERE
-                        `dirty_manuf_id`    = ?
-                ";
-                $this->db->update($sql, [(string)$name, $result->id]);
-                $id = (int)$result->id;
-            // Создаем
-            } else {
-                $sql = "
-                    INSERT INTO `dirty_manuf`
-                    SET
-                        `dirty_manuf_name` = " . $this->pdo->quote((string)$name) . "
-                ";
-                $this->db->insert($sql);
-                $id = $this->pdo->lastInsertId();
-            }
-
-            $this->db->commit();
-            return $id;
+            $sql = "
+                SELECT
+                    `dirty_manuf_id`   as `id`,
+                    `dirty_manuf_name` as `name`
+                FROM `dirty_manuf` 
+                WHERE 1
+                    AND `dirty_manuf_name`           = ? 
+                    AND `dirty_manuf_remove_user_id` = 0
+            ";
+            $result = $this->db->selectOne($sql, [(string)$name]);
+            return ($result) ? (int)$result->id : 0;
         } catch (\Exception $e) {
-            $this->db->rollBack();
             Log::error('Error creating manuf name: ' . $e->getMessage());
             return $e->getMessage();
         }
@@ -178,50 +148,77 @@ class ManufModel extends Model
     /**
      * Обновление данных
      */
-    public function set($id, $name) {
+    public function create($name, $country) {
+        try {
+            // Проверяем, существует ли запись
+            $id = $this->get_id_from_name($name);
+
+            if ($id > 0) return 'Запись уже существует';
+
+            $this->db->beginTransaction();
+
+            // Создаем запись
+            $this->db->insert("INSERT INTO `dirty_manuf` SET `dirty_manuf_name` = ?", [(string)$name]);
+
+            $id = (int)$this->pdo->lastInsertId();
+
+            // Привязываем к стране
+            $this->db->update("
+                INSERT INTO `dirty_manuf_country`
+                SET
+                    `dirty_manuf_country_dirty_manuf_id`   = " . $this->pdo->quote((int)$id) . ",
+                    `dirty_manuf_country_dirty_country_id` = " . $this->pdo->quote((int)$country) . ",
+                    `dirty_manuf_country_add_user_id`      = " . $this->pdo->quote(auth()->id()) . ",
+                    `dirty_manuf_country_add_date`         = UNIX_TIMESTAMP()
+            ");
+
+            $this->db->commit();
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Create error: '.$e->getMessage());
+            $this->db->rollBack();
+            return $e->getMessage();
+        }
+    }
+
+    /**
+     * Обновление данных
+     */
+    public function set($id, $name, $country) {
         try {
             $this->db->beginTransaction();
 
             // Проверяем, существует ли запись с таким ID
             $info = $this->get_info_from_id($id);
 
-            if (!$info) return 'Группа не найдена';
+            if (!$info) return 'Запись не найдена';
 
-            // Проверяем, отличается ли наименование
-            $dbId = $this->get_id_from_name($name);
+            // Обновляем написание
+            $this->db->update("UPDATE `dirty_manuf` SET `dirty_manuf_name` = ? WHERE `dirty_manuf_id` = ?", [(string)$name, (int)$id]);
+            
+            // Привязываем к стране
+            $this->db->update("
+                INSERT INTO `dirty_manuf_country`
+                SET
+                    `dirty_manuf_country_dirty_manuf_id`   = " . $this->pdo->quote((int)$id) . ",
+                    `dirty_manuf_country_dirty_country_id` = " . $this->pdo->quote((int)$country) . ",
+                    `dirty_manuf_country_add_user_id`      = " . $this->pdo->quote(auth()->id()) . ",
+                    `dirty_manuf_country_add_date`         = UNIX_TIMESTAMP()
+                ON DUPLICATE KEY UPDATE
+                    `dirty_manuf_country_dirty_country_id` = " . $this->pdo->quote((int)$country) . "
+            ");
 
-            if (is_string($dbId) || $id == $dbId) {
-                // Обновляем написание
-                $this->db->update("UPDATE `dirty_manuf` SET `dirty_manuf_name` = ? WHERE `dirty_manuf_id` = ?", [(string)$name, (int)$info->id]);
-            } else {
-                // Получаем все связанные файлы
-                $fileIds = $this->db->selectOne("SELECT GROUP_CONCAT(DISTINCT `dirty_manuf_file_dirty_file_id`) as `ids` FROM `dirty_manuf_file` WHERE `dirty_manuf_file_dirty_manuf_id` = ?", [(int)$id])->ids ?? "";
-
-                // Перепривязываем
-                if ($fileIds <> "") {
-                    $this->db->update("
-                        UPDATE `dirty_manuf_file`
-                        SET
-                            `dirty_manuf_file_dirty_manuf_id` = ?
-                        WHERE
-                            `dirty_manuf_file_dirty_file_id` IN ({$fileIds})
-                        ",
-                        [(int)$dbId]
-                    );
-                }
-
-                // Удаляем
-                $this->db->update("
-                    UPDATE `dirty_manuf`
-                    SET
-                        `dirty_manuf_remove_user_id` = ?,
-                        `dirty_manuf_remove_date`    = UNIX_TIMESTAMP()
-                    WHERE
-                        `dirty_manuf_id` = ?
-                    ",
-                    [auth()->id(), (int)$id]
-                );
-            }
+            // Удаляем если привязаны другие страны
+            $this->db->update("
+                UPDATE IGNORE `dirty_manuf_country`
+                SET
+                    `dirty_manuf_country_remove_user_id` = " . $this->pdo->quote(auth()->id()) . ",
+                    `dirty_manuf_country_remove_date`    = UNIX_TIMESTAMP()
+                WHERE 1
+                    AND `dirty_manuf_country_dirty_manuf_id`   =  " . $this->pdo->quote((int)$id) . "
+                    AND `dirty_manuf_country_dirty_country_id` <> " . $this->pdo->quote((int)$country) . "
+                    AND `dirty_manuf_country_remove_user_id` = 0
+            ");
 
             $this->db->commit();
             return true;

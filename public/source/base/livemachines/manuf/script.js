@@ -9,7 +9,16 @@ $(document).ready(function() {
     const updateUrl      = $table.data('update-url').replace('REPLACE_WITH_ID', '');
     const deleteUrl      = $table.data('delete-url').replace('REPLACE_WITH_ID', '');
 
+    initSelect2();
     initDataTable();
+
+    // ===== SELECT2 ДЛЯ ФИЛЬТРОВ =====
+    function initSelect2() {
+        $('#edit_country').select2({minimumInputLength: 0, language: 'ru'});
+        $('#edit_country').on('select2:open', function() {
+            $('.select2-dropdown').css('z-index', '10');
+        });
+    }
     
     // ===== DATATABLE В РЕЖИМЕ SERVER-SIDE =====
     function initDataTable() {
@@ -31,6 +40,14 @@ $(document).ready(function() {
                     name:       'name',
                     orderable:  true,
                     searchable: true,
+                },
+                { 
+                    data:       'country', 
+                    name:       'country',
+                    className:  'text-center',
+                    orderable:  false,
+                    searchable: false,
+                    render:    (data) => data || '<span class="text-muted">-</span>' 
                 },
                 { 
                     data:       'models', 
@@ -155,6 +172,7 @@ $(document).ready(function() {
     function fillEditModal(data) {
         $('#edit_id').val(data.id);
         $('#edit_name').val(data.name);
+        $('#edit_country').val(data.country).trigger('change');
     }
 
     // ===== СОЗДАНИЕ НОВОГО ПАРАМЕТРА =====
@@ -165,7 +183,7 @@ $(document).ready(function() {
         $('#modalTitleText').text('Создание');
         $('#editModalLabel i').attr('class', 'mdi mdi-plus-circle');
 
-        fillEditModal([id => 0, name => '']);
+        fillEditModal({id: 'new', name: '', country: 0});
         
         // Используем специальный URL для создания с параметром new=true
         $('#editModal').modal('show');
@@ -182,7 +200,9 @@ $(document).ready(function() {
     $('#saveBtn').on('click', function() {
         const formData = {
             '_token': csrfToken,
-            'name': $('#edit_name').val()
+            'id': $('#edit_id').val(),
+            'name': $('#edit_name').val(),
+            'country': $('#edit_country').val()
         };
         
         if (!formData.name) {
@@ -197,7 +217,7 @@ $(document).ready(function() {
 
         // Определяем URL для сохранения (создание или обновление)
         let saveUrl;
-        if (!id) {
+        if (id == 'new') {
             // Новый параметр
             saveUrl = createUrl;
         } else {

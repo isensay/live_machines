@@ -36,10 +36,10 @@ class CountryModel extends Model
     /**
      * Получение списка стран
      */
-    public function get_list($search, $start, $length, $orderColumn, $orderDir) {
+    public function get_list($search = "", $start = 0, $length = 0, $orderColumn = 0, $orderDir = 'asc') {
         // Допустимые названия полей
         $columns = [
-            0 => 'countryName'
+            0 => 'name'
         ];
 
         // Условие по поиску
@@ -59,26 +59,29 @@ class CountryModel extends Model
                 $orderDir = 'asc'; // Значение по умолчанию
             }
 
-            $sqlSort = " ORDER BY `{$orderField}` {$orderDir}";
+            $sqlSort = " ORDER BY `{$orderField}` " . strtoupper($orderDir);
         } else {
             $sqlSort = "";
         }
+
+        // Лимит
+        $sqlLimit = ($length > 0) ? "LIMIT {$start}, {$length}" : "";
 
         $sql =
         "
         SELECT
             SQL_CALC_FOUND_ROWS
-            `countryId`,
-            `countryName`,
-            IF(`manufCount` > 0, `manufCount`, '') as `manufCount`,
-            IF(`fileCount`  > 0, `fileCount`,  '') as `fileCount`
+            `id`,
+            `name`,
+            IF(`manufs` > 0, `manufs`, '') as `manufs`,
+            IF(`files`  > 0, `files`,  '') as `files`
         FROM
             (
                 SELECT
-                    `dirty_country_id`               as `countryId`,
-                    `dirty_country_name`             as `countryName`,
-                    COUNT(DISTINCT `dirty_manuf_id`) as `manufCount`,
-                    COUNT(DISTINCT `dirty_file_id`)  as `fileCount`
+                    `dirty_country_id`               as `id`,
+                    `dirty_country_name`             as `name`,
+                    COUNT(DISTINCT `dirty_manuf_id`) as `manufs`,
+                    COUNT(DISTINCT `dirty_file_id`)  as `files`
                 FROM `dirty_country`
                     LEFT JOIN `dirty_country_file`  ON (`dirty_country_id` = `dirty_country_file_dirty_country_id`)
                     LEFT JOIN `dirty_file`          ON (`dirty_file_id`    = `dirty_country_file_dirty_file_id`)
@@ -89,10 +92,10 @@ class CountryModel extends Model
                     AND (dirty_file_id IS NULL OR `dirty_file_remove_user_id` = 0)
                     {$sqlWhereSearch}
                 GROUP BY
-                    `countryId`
+                    `id`
             ) as `tmp`
         {$sqlSort}
-        LIMIT {$start}, {$length}
+        {$sqlLimit}
         ";
         
         // Выполняем финальный запрос

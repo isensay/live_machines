@@ -27,13 +27,13 @@ $(document).ready(function() {
             },
             columns: [
                 {
-                    data:       'countryName',
-                    name:       'countryName',
+                    data:       'name',
+                    name:       'name',
                     orderable:  true,
                     searchable: true,
                 },
                 { 
-                    data:       'manufCount', 
+                    data:       'manufs', 
                     name:       'manufs',
                     className:  'text-center',
                     orderable:  false,
@@ -41,7 +41,7 @@ $(document).ready(function() {
                     render:    (data) => data || '<span class="text-muted">-</span>' 
                 },
                 { 
-                    data:       'fileCount',  
+                    data:       'files',  
                     name:       'files',
                     className:  'text-center',
                     orderable:  false,
