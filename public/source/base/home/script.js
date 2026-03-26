@@ -18,15 +18,6 @@ $(document).ready(function(){
     });
 
     // Карта стран производителей
-    const markers1 = [
-        { name: 'Германия', coords: [51.1657, 10.4515], city: 'Берлин', latLng: [52.5200, 13.4050] },
-        { name: 'Китай', coords: [35.8617, 104.1954], city: 'Пекин', latLng: [39.9042, 116.4074] },
-        { name: 'Россия', coords: [61.5240, 105.3188], city: 'Москва', latLng: [55.7558, 37.6173] },
-        { name: 'США', coords: [37.0902, -95.7129], city: 'Вашингтон', latLng: [38.9072, -77.0369] },
-        { name: 'Тайвань', coords: [23.6978, 120.9605], city: 'Тайбэй', latLng: [25.0330, 121.5654] },
-        { name: 'Япония', coords: [36.2048, 138.2529], city: 'Токио', latLng: [35.6762, 139.6503] }
-    ];
-
     const markers = countriesFromDb.map(country => ({
             name: country.name,
             city: country.name,

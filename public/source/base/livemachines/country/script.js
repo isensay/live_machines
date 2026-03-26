@@ -12,11 +12,13 @@ $(document).ready(function() {
     initDataTable();
 
     // ===== ИНИЦИАЛИЗАЦИЯ МАСКИ ДЛЯ КООРДИНАТ =====
-    // Для широты (от -90 до 90) - максимум 2 цифры целой части
-    $('#edit_country_latitude').mask('00.######', {
+    // Для широты (от -90 до 90)
+    $('#edit_country_latitude').mask('0?0.######', {
         translation: {
-            '0': { pattern: /[0-9\-]/, optional: true }
-        }
+            '0': { pattern: /[0-9\-]/, optional: true },
+            '?': { pattern: /[0-9]/, optional: true }
+        },
+        placeholder: '__.______'
     }).on('blur', function() {
         let value = $(this).val();
         if (value && value !== '-') {
@@ -25,14 +27,19 @@ $(document).ready(function() {
                 if (num < -90) num = -90;
                 if (num > 90) num = 90;
                 $(this).val(num.toFixed(6));
+            } else {
+                $(this).val('');
             }
         }
     });
-    // Для долготы (от -180 до 180) - максимум 3 цифры целой части
-    $('#edit_country_longitude').mask('000.######', {
+
+    // Для долготы (от -180 до 180)
+    $('#edit_country_longitude').mask('0?0?0.######', {
         translation: {
-            '0': { pattern: /[0-9\-]/, optional: true }
-        }
+            '0': { pattern: /[0-9\-]/, optional: true },
+            '?': { pattern: /[0-9]/, optional: true }
+        },
+        placeholder: '____.______'
     }).on('blur', function() {
         let value = $(this).val();
         if (value && value !== '-') {
@@ -41,6 +48,8 @@ $(document).ready(function() {
                 if (num < -180) num = -180;
                 if (num > 180) num = 180;
                 $(this).val(num.toFixed(6));
+            } else {
+                $(this).val('');
             }
         }
     });
